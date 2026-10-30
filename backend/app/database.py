@@ -1,17 +1,20 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    database_url: str = "sqlite+aiosqlite:///./vtcsas.db"
+    database_url: str = "sqlite:///./vtcsas.db"
     secret_key: str = "your-super-secret-key-change-this-in-production"
 
 settings = Settings()
 
-engine = create_async_engine(settings.database_url, echo=True)
-AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-async def get_db():
-    async with AsyncSessionLocal() as session:
-        yield session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
-from .routers import auth, tasks
+from .routers import auth, tasks, chat
 
 app = FastAPI(title="VTC-SAS API", version="0.1.0")
 
@@ -15,6 +15,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
+app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 
 @app.on_event("startup")
 def startup():

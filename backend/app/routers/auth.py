@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
+import traceback
 from ..database import get_db
 from ..models import User
 from ..schemas import UserCreate, Token
@@ -37,18 +38,24 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 @router.post("/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.username == user.username).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    
-    hashed = pwd_context.hash(user.password)
-    db_user = User(username=user.username, email=user.email, hashed_password=hashed)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    
-    token = create_access_token({"sub": db_user.username})
-    return {"access_token": token, "token_type": "bearer"}
+    try:
+        existing = db.query(User).filter(User.username == user.username).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Username already registered")
+        
+        hashed = pwd_context.hash(user.password)
+        db_user = User(username=user.username, email=user.email, hashed_password=hashed)
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        
+        token = create_access_token({"sub": db_user.username})
+        return {"access_token": token, "token_type": "bearer"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("Register error:", traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):

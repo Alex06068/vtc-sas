@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .routers import auth, tasks, chat
+from . import models  # ensure models are imported so tables are created
 
 app = FastAPI(title="VTC-SAS API", version="0.1.0")
 
@@ -20,6 +21,7 @@ app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
+    print("Database tables created/verified")
 
 @app.get("/")
 def root():

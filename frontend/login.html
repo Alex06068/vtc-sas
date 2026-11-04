@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>登录 · VTC-SAS</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="login-page">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-accent"></div>
+      <div class="login-body">
+        <div class="login-brand">
+          <span class="brand-badge" aria-hidden="true">V</span>
+          <span class="brand-text">
+            <strong>VTC-SAS</strong>
+            <small>课程学习平台</small>
+          </span>
+        </div>
+
+        <h1>登录</h1>
+        <p class="login-sub">使用你的账号登录，查看课程、作业与出席记录。</p>
+
+        <form id="login-form" novalidate>
+          <div class="form-error" id="login-error" role="alert"></div>
+          <div class="field">
+            <label for="login-username">用户名</label>
+            <input id="login-username" name="username" type="text" autocomplete="username" required>
+          </div>
+          <div class="field">
+            <label for="login-password">密码</label>
+            <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+          </div>
+          <button class="btn btn-primary" id="login-submit" type="submit" style="width:100%;">登录</button>
+        </form>
+
+        <div class="login-switch" id="register-switch">
+          <form id="register-form" novalidate>
+            <div class="form-error" id="register-error" role="alert"></div>
+            <div class="field">
+              <label for="register-username">用户名</label>
+              <input id="register-username" name="username" type="text" autocomplete="username" required>
+            </div>
+            <div class="field">
+              <label for="register-email">邮箱</label>
+              <input id="register-email" name="email" type="email" autocomplete="email" required>
+            </div>
+            <div class="field">
+              <label for="register-password">密码</label>
+              <input id="register-password" name="password" type="password" autocomplete="new-password" required>
+            </div>
+            <div class="field">
+              <label for="register-role">角色</label>
+              <select id="register-role" name="role">
+                <option value="student" selected>学生</option>
+                <option value="teacher">教师</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="register-submit" type="submit" style="width:100%;">注册并登录</button>
+          </form>
+        </div>
+
+        <div class="login-foot">
+          <span id="login-foot-text">没有账号？<button type="button" id="show-register">注册一个</button></span>
+          <span id="register-foot-text" class="login-switch">已有账号？<button type="button" id="show-login">去登录</button></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <noscript>
+    <p style="text-align:center;padding:16px;color:#b3261e">本页面需要启用 JavaScript 才能登录。</p>
+  </noscript>
+
+  <script defer src="js/config.js"></script>
+  <script defer src="js/api.js"></script>
+  <script defer src="js/login.js"></script>
+</body>
+</html>

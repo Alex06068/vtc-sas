@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>出席记录 · VTC-SAS</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-navbar">
+    <div class="navbar-inner container">
+      <a class="brand" href="index.html" aria-label="VTC-SAS 首页">
+        <span class="brand-badge" aria-hidden="true">V</span>
+        <span class="brand-text">
+          <strong>VTC-SAS</strong>
+          <small>课程学习平台</small>
+        </span>
+      </a>
+      <nav class="main-nav" aria-label="主导航">
+        <a href="index.html">我的课程</a>
+        <a href="assignments.html">作业</a>
+        <a href="attendance.html" class="active" aria-current="page">出席记录</a>
+      </nav>
+      <div class="navbar-actions">
+        <span class="user-chip" id="nav-user">
+          <span class="user-role" id="nav-role"></span>
+          <span id="nav-username">…</span>
+        </span>
+        <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">退出</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="container">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Dashboard · 出席</p>
+          <h1>出席记录</h1>
+          <p class="page-sub">查看签到历史。点击「签到」记录今天出勤；同一天重复签到会更新状态。</p>
+        </div>
+      </div>
+
+      <div class="attendance-top">
+        <div class="panel">
+          <h2>今日签到</h2>
+          <p class="panel-sub">今天 <span id="today-date" class="today-date"></span></p>
+          <div class="checkin-row">
+            <span id="today-status" class="badge badge-muted">尚未签到</span>
+            <button class="btn btn-primary" id="checkin-btn" type="button">签到（出勤）</button>
+          </div>
+          <p class="checkin-note">签到后会把今天记为 present（出勤）。</p>
+        </div>
+        <div class="panel">
+          <h2>出席概览</h2>
+          <div class="stat-chips" style="margin:14px 0 0;">
+            <span class="chip"><span class="dot success" aria-hidden="true"></span>出勤 <b id="stat-present">0</b></span>
+            <span class="chip"><span class="dot warning" aria-hidden="true"></span>迟到 <b id="stat-late">0</b></span>
+            <span class="chip"><span class="dot danger" aria-hidden="true"></span>缺勤 <b id="stat-absent">0</b></span>
+            <span class="chip"><span class="dot brand" aria-hidden="true"></span>总计 <b id="stat-total">0</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">日期</th>
+                <th scope="col">状态</th>
+              </tr>
+            </thead>
+            <tbody id="attendance-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="attendance-status" class="state-box" role="status"></div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>VTC-SAS · Moodle 风格课程前端</span>
+      <span>数据来自后端 API · 组员 A</span>
+    </div>
+  </footer>
+
+  <noscript>
+    <p style="text-align:center;padding:16px;color:#b3261e">本页面需要启用 JavaScript 才能加载出席数据。</p>
+  </noscript>
+
+  <script defer src="js/config.js"></script>
+  <script defer src="js/api.js"></script>
+  <script defer src="js/normalize.js"></script>
+  <script defer src="js/ui.js"></script>
+  <script defer src="js/attendance.js"></script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>我的课程 · VTC-SAS</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-navbar">
+    <div class="navbar-inner container">
+      <a class="brand" href="index.html" aria-label="VTC-SAS 首页">
+        <span class="brand-badge" aria-hidden="true">V</span>
+        <span class="brand-text">
+          <strong>VTC-SAS</strong>
+          <small>课程学习平台</small>
+        </span>
+      </a>
+      <nav class="main-nav" aria-label="主导航">
+        <a href="index.html" class="active" aria-current="page">我的课程</a>
+        <a href="assignments.html">作业</a>
+        <a href="attendance.html">出席记录</a>
+      </nav>
+      <div class="navbar-actions">
+        <span class="user-chip" id="nav-user">
+          <span class="user-role" id="nav-role"></span>
+          <span id="nav-username">…</span>
+        </span>
+        <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">退出</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="container">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Dashboard · 课程</p>
+          <h1>我的课程</h1>
+          <p class="page-sub">这里显示你已加入的全部课程。点击卡片可以查看该课程的作业。</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary" id="join-course-btn" type="button">＋ 加入课程</button>
+          <button class="btn btn-secondary" id="create-course-btn" type="button" hidden>创建课程</button>
+        </div>
+      </div>
+
+      <div class="stat-chips" aria-live="polite">
+        <span class="chip"><span class="dot brand" aria-hidden="true"></span><b id="course-count">0</b> 门课程</span>
+      </div>
+
+      <div id="courses-grid" class="course-grid" aria-live="polite"></div>
+      <div id="courses-status" class="state-box" role="status"></div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>VTC-SAS · Moodle 风格课程前端</span>
+      <span>数据来自后端 API · 组员 A</span>
+    </div>
+  </footer>
+
+  <!-- 加入课程 -->
+  <dialog id="join-dialog" class="modal" aria-labelledby="join-dialog-title">
+    <form id="join-form" novalidate>
+      <div class="modal-head">
+        <h2 id="join-dialog-title">加入课程</h2>
+        <p>输入教师提供的课程代码，例如 IT114115。</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-error" id="join-error" role="alert"></div>
+        <div class="field">
+          <label for="join-code">课程代码</label>
+          <input id="join-code" name="code" type="text" placeholder="例如 IT114115" autocomplete="off" required>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-secondary" data-close>取消</button>
+        <button type="submit" class="btn btn-primary" id="join-submit">加入课程</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 创建课程（仅教师可见） -->
+  <dialog id="create-dialog" class="modal" aria-labelledby="create-dialog-title">
+    <form id="create-form" novalidate>
+      <div class="modal-head">
+        <h2 id="create-dialog-title">创建课程</h2>
+        <p>创建后会自动加入该课程。</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-error" id="create-error" role="alert"></div>
+        <div class="field">
+          <label for="create-code">课程代码</label>
+          <input id="create-code" name="code" type="text" placeholder="例如 IT114115" autocomplete="off" required>
+        </div>
+        <div class="field">
+          <label for="create-name">课程名称</label>
+          <input id="create-name" name="name" type="text" placeholder="例如 Cloud Computing" autocomplete="off" required>
+        </div>
+        <div class="field">
+          <label for="create-desc">课程简介（可选）</label>
+          <textarea id="create-desc" name="description" placeholder="一句话介绍这门课"></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-secondary" data-close>取消</button>
+        <button type="submit" class="btn btn-primary" id="create-submit">创建课程</button>
+      </div>
+    </form>
+  </dialog>
+
+  <noscript>
+    <p style="text-align:center;padding:16px;color:#b3261e">本页面需要启用 JavaScript 才能加载课程数据。</p>
+  </noscript>
+
+  <script defer src="js/config.js"></script>
+  <script defer src="js/api.js"></script>
+  <script defer src="js/normalize.js"></script>
+  <script defer src="js/ui.js"></script>
+  <script defer src="js/dashboard.js"></script>
+</body>
+</html>

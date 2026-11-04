@@ -4,12 +4,9 @@ from typing import Optional
 
 class UserCreate(BaseModel):
     username: str
-    email: Optional[str] = None
+    email: str
     password: str
-
-class UserLogin(BaseModel):
-    username: str
-    password: str
+    role: str = "student"
 
 class Token(BaseModel):
     access_token: str
@@ -19,14 +16,16 @@ class TaskCreate(BaseModel):
     title: str
     due_date: Optional[datetime] = None
     weighting: Optional[str] = None
+    course_id: Optional[int] = None
 
 class TaskResponse(BaseModel):
     id: int
     title: str
     due_date: Optional[datetime]
     weighting: Optional[str]
+    course_id: Optional[int]
     is_completed: bool
     source: Optional[str]
-    
+
     class Config:
         from_attributes = True

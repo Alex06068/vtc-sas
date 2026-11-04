@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from openai import OpenAI
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, date
 from ..database import get_db
-from ..models import Task, User
+from ..models import Task, User, Attendance
 from .auth import get_current_user
 import json
 
@@ -30,9 +30,9 @@ tools = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "title": {"type": "string", "description": "Assignment title"},
-                    "due_date": {"type": "string", "description": "Due date in YYYY-MM-DD format if possible"},
-                    "weighting": {"type": "string", "description": "Weighting e.g. 20%"}
+                    "title": {"type": "string"},
+                    "due_date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "weighting": {"type": "string"}
                 },
                 "required": ["title"]
             }
@@ -42,7 +42,28 @@ tools = [
         "type": "function",
         "function": {
             "name": "list_assignments",
-            "description": "List all assignments/deadlines for the current user",
+            "description": "List all assignments for the current user",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "check_in_attendance",
+            "description": "Check in today's attendance for the user",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "status": {"type": "string", "enum": ["present", "absent", "late"], "description": "Attendance status"}
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_attendance",
+            "description": "List the user's attendance records",
             "parameters": {"type": "object", "properties": {}}
         }
     }
@@ -56,26 +77,37 @@ def execute_tool(name: str, args: dict, user: User, db: Session):
                 due = datetime.fromisoformat(args["due_date"])
             except:
                 pass
-        task = Task(
-            user_id=user.id,
-            title=args["title"],
-            due_date=due,
-            weighting=args.get("weighting"),
-            source="ai"
-        )
+        task = Task(user_id=user.id, title=args["title"], due_date=due, weighting=args.get("weighting"), source="ai")
         db.add(task)
         db.commit()
-        return f"Saved assignment: {args['title']}"
+        return f"Saved: {args['title']}"
     elif name == "list_assignments":
         tasks = db.query(Task).filter(Task.user_id == user.id).all()
         if not tasks:
-            return "You have no assignments yet."
+            return "No assignments yet."
         lines = []
         for t in tasks:
             due = t.due_date.strftime("%Y-%m-%d") if t.due_date else "no due date"
             w = f" ({t.weighting})" if t.weighting else ""
             lines.append(f"- {t.title}{w} due {due}")
-        return "Your assignments:\n" + "\n".join(lines)
+        return "Assignments:\n" + "\n".join(lines)
+    elif name == "check_in_attendance":
+        today = date.today().isoformat()
+        status = args.get("status", "present")
+        existing = db.query(Attendance).filter(Attendance.user_id == user.id, Attendance.date == today).first()
+        if existing:
+            existing.status = status
+            db.commit()
+            return f"Updated today to {status}"
+        db.add(Attendance(user_id=user.id, date=today, status=status))
+        db.commit()
+        return f"Checked in as {status}"
+    elif name == "list_attendance":
+        records = db.query(Attendance).filter(Attendance.user_id == user.id).order_by(Attendance.date.desc()).limit(10).all()
+        if not records:
+            return "No attendance records yet."
+        lines = [f"- {r.date}: {r.status}" for r in records]
+        return "Recent attendance:\n" + "\n".join(lines)
     return "Unknown tool"
 
 @router.post("/", response_model=ChatResponse)
@@ -84,7 +116,7 @@ def chat(request: ChatRequest, current_user: User = Depends(get_current_user), d
         messages = [
             {
                 "role": "system",
-                "content": "You are a helpful academic assistant for VTC students. When the user pastes assignment info or asks to save a deadline, use the save_assignment tool. When they ask what assignments they have, use list_assignments. Otherwise just chat helpfully."
+                "content": "You are a helpful academic assistant. Use tools when the user wants to save/list assignments or check in/list attendance. Be concise."
             },
             {"role": "user", "content": request.message}
         ]
@@ -102,7 +134,7 @@ def chat(request: ChatRequest, current_user: User = Depends(get_current_user), d
         if msg.tool_calls:
             for tool_call in msg.tool_calls:
                 name = tool_call.function.name
-                args = json.loads(tool_call.function.arguments)
+                args = json.loads(tool_call.function.arguments or "{}")
                 result = execute_tool(name, args, current_user, db)
                 messages.append(msg)
                 messages.append({
@@ -111,7 +143,6 @@ def chat(request: ChatRequest, current_user: User = Depends(get_current_user), d
                     "content": result
                 })
 
-            # Get final reply
             final = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=messages,

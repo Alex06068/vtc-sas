@@ -4,7 +4,7 @@ from openai import OpenAI
 from sqlalchemy.orm import Session
 from datetime import datetime, date
 from ..database import get_db
-from ..models import Task, User, Attendance
+from ..models import Task, User, Attendance, Course, Module
 from .auth import get_current_user
 import json
 
@@ -26,13 +26,14 @@ tools = [
         "type": "function",
         "function": {
             "name": "save_assignment",
-            "description": "Save a new assignment/deadline extracted from user message",
+            "description": "Save a new assignment",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "title": {"type": "string"},
-                    "due_date": {"type": "string", "description": "YYYY-MM-DD"},
-                    "weighting": {"type": "string"}
+                    "due_date": {"type": "string"},
+                    "weighting": {"type": "string"},
+                    "course_code": {"type": "string"}
                 },
                 "required": ["title"]
             }
@@ -42,7 +43,30 @@ tools = [
         "type": "function",
         "function": {
             "name": "list_assignments",
-            "description": "List all assignments for the current user",
+            "description": "List assignments",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_course",
+            "description": "Create a new course",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "code": {"type": "string"},
+                    "name": {"type": "string"}
+                },
+                "required": ["code", "name"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_courses",
+            "description": "List all courses",
             "parameters": {"type": "object", "properties": {}}
         }
     },
@@ -50,21 +74,13 @@ tools = [
         "type": "function",
         "function": {
             "name": "check_in_attendance",
-            "description": "Check in today's attendance for the user",
+            "description": "Check in attendance",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "status": {"type": "string", "enum": ["present", "absent", "late"], "description": "Attendance status"}
+                    "status": {"type": "string"}
                 }
             }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "list_attendance",
-            "description": "List the user's attendance records",
-            "parameters": {"type": "object", "properties": {}}
         }
     }
 ]
@@ -77,20 +93,37 @@ def execute_tool(name: str, args: dict, user: User, db: Session):
                 due = datetime.fromisoformat(args["due_date"])
             except:
                 pass
-        task = Task(user_id=user.id, title=args["title"], due_date=due, weighting=args.get("weighting"), source="ai")
+        course_id = None
+        if args.get("course_code"):
+            c = db.query(Course).filter(Course.code == args["course_code"]).first()
+            if c:
+                course_id = c.id
+        task = Task(user_id=user.id, title=args["title"], due_date=due, weighting=args.get("weighting"), course_id=course_id, source="ai")
         db.add(task)
         db.commit()
         return f"Saved: {args['title']}"
     elif name == "list_assignments":
         tasks = db.query(Task).filter(Task.user_id == user.id).all()
         if not tasks:
-            return "No assignments yet."
+            return "No assignments."
         lines = []
         for t in tasks:
-            due = t.due_date.strftime("%Y-%m-%d") if t.due_date else "no due date"
-            w = f" ({t.weighting})" if t.weighting else ""
-            lines.append(f"- {t.title}{w} due {due}")
+            due = t.due_date.strftime("%Y-%m-%d") if t.due_date else "no due"
+            lines.append(f"- {t.title} ({t.weighting or ''}) due {due}")
         return "Assignments:\n" + "\n".join(lines)
+    elif name == "create_course":
+        existing = db.query(Course).filter(Course.code == args["code"]).first()
+        if existing:
+            return "Course already exists"
+        c = Course(code=args["code"], name=args["name"], teacher_id=user.id)
+        db.add(c)
+        db.commit()
+        return f"Created course {args['code']}: {args['name']}"
+    elif name == "list_courses":
+        courses = db.query(Course).all()
+        if not courses:
+            return "No courses yet."
+        return "Courses:\n" + "\n".join([f"- {c.code}: {c.name}" for c in courses])
     elif name == "check_in_attendance":
         today = date.today().isoformat()
         status = args.get("status", "present")
@@ -98,29 +131,19 @@ def execute_tool(name: str, args: dict, user: User, db: Session):
         if existing:
             existing.status = status
             db.commit()
-            return f"Updated today to {status}"
+            return f"Updated to {status}"
         db.add(Attendance(user_id=user.id, date=today, status=status))
         db.commit()
         return f"Checked in as {status}"
-    elif name == "list_attendance":
-        records = db.query(Attendance).filter(Attendance.user_id == user.id).order_by(Attendance.date.desc()).limit(10).all()
-        if not records:
-            return "No attendance records yet."
-        lines = [f"- {r.date}: {r.status}" for r in records]
-        return "Recent attendance:\n" + "\n".join(lines)
-    return "Unknown tool"
+    return "Unknown"
 
 @router.post("/", response_model=ChatResponse)
 def chat(request: ChatRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         messages = [
-            {
-                "role": "system",
-                "content": "You are a helpful academic assistant. Use tools when the user wants to save/list assignments or check in/list attendance. Be concise."
-            },
+            {"role": "system", "content": "You are an academic assistant. Use tools to save/list assignments, create/list courses, or check in attendance."},
             {"role": "user", "content": request.message}
         ]
-
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,
@@ -128,30 +151,17 @@ def chat(request: ChatRequest, current_user: User = Depends(get_current_user), d
             tool_choice="auto",
             max_tokens=500
         )
-
         msg = response.choices[0].message
-
         if msg.tool_calls:
-            for tool_call in msg.tool_calls:
-                name = tool_call.function.name
-                args = json.loads(tool_call.function.arguments or "{}")
-                result = execute_tool(name, args, current_user, db)
+            for tc in msg.tool_calls:
+                args = json.loads(tc.function.arguments or "{}")
+                result = execute_tool(tc.function.name, args, current_user, db)
                 messages.append(msg)
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": result
-                })
-
-            final = client.chat.completions.create(
-                model="deepseek-chat",
-                messages=messages,
-                max_tokens=500
-            )
+                messages.append({"role": "tool", "tool_call_id": tc.id, "content": result})
+            final = client.chat.completions.create(model="deepseek-chat", messages=messages, max_tokens=500)
             reply = final.choices[0].message.content
         else:
-            reply = msg.content or "Sorry, I couldn't process that."
-
+            reply = msg.content or "Sorry."
         return {"reply": reply}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

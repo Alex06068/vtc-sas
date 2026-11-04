@@ -26,7 +26,7 @@ tools = [
         "type": "function",
         "function": {
             "name": "save_assignment",
-            "description": "Save a new assignment",
+            "description": "Save a new assignment. If course_code is given, it becomes a course assignment.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -43,7 +43,7 @@ tools = [
         "type": "function",
         "function": {
             "name": "list_assignments",
-            "description": "List my assignments",
+            "description": "List my assignments (personal + from enrolled courses)",
             "parameters": {"type": "object", "properties": {}}
         }
     },
@@ -115,15 +115,25 @@ def execute_tool(name: str, args: dict, user: User, db: Session):
         task = Task(user_id=user.id, title=args["title"], due_date=due, weighting=args.get("weighting"), course_id=course_id, source="ai")
         db.add(task)
         db.commit()
-        return f"Saved: {args['title']}"
+        return f"Saved: {args['title']}" + (f" (linked to {args.get('course_code')})" if course_id else "")
     elif name == "list_assignments":
-        tasks = db.query(Task).filter(Task.user_id == user.id).all()
-        if not tasks:
+        # Personal + enrolled course tasks
+        personal = db.query(Task).filter(Task.user_id == user.id).all()
+        ens = db.query(Enrollment).filter(Enrollment.user_id == user.id).all()
+        course_ids = [e.course_id for e in ens]
+        course_tasks = db.query(Task).filter(Task.course_id.in_(course_ids)).all() if course_ids else []
+        all_tasks = {t.id: t for t in personal + course_tasks}
+        if not all_tasks:
             return "No assignments."
         lines = []
-        for t in tasks:
+        for t in all_tasks.values():
             due = t.due_date.strftime("%Y-%m-%d") if t.due_date else "no due"
-            lines.append(f"- {t.title} ({t.weighting or ''}) due {due}")
+            course_info = ""
+            if t.course_id:
+                c = db.query(Course).filter(Course.id == t.course_id).first()
+                if c:
+                    course_info = f" [{c.code}]"
+            lines.append(f"- {t.title}{course_info} ({t.weighting or ''}) due {due}")
         return "Assignments:\n" + "\n".join(lines)
     elif name == "create_course":
         existing = db.query(Course).filter(Course.code == args["code"]).first()
@@ -167,7 +177,7 @@ def execute_tool(name: str, args: dict, user: User, db: Session):
 def chat(request: ChatRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         messages = [
-            {"role": "system", "content": "You are an academic assistant. Use tools to create/join courses, save/list assignments, or check in. When user says join a course, use join_course."},
+            {"role": "system", "content": "You are an academic assistant. Use tools to create/join courses, save/list assignments (personal or course-linked), or check in. When saving assignment with a course, mention the course_code."},
             {"role": "user", "content": request.message}
         ]
         response = client.chat.completions.create(
@@ -180,7 +190,6 @@ def chat(request: ChatRequest, current_user: User = Depends(get_current_user), d
         msg = response.choices[0].message
 
         if msg.tool_calls:
-            # Append assistant message only once
             messages.append(msg)
             for tc in msg.tool_calls:
                 args = json.loads(tc.function.arguments or "{}")

@@ -16,6 +16,13 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 SECRET_KEY = "your-super-secret-key-change-this-in-production"
 ALGORITHM = "HS256"
 
+def hash_password(password: str) -> str:
+    # bcrypt has a 72-byte limit
+    return pwd_context.hash(password[:72])
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain[:72], hashed)
+
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(hours=24)
@@ -43,7 +50,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         if existing:
             raise HTTPException(status_code=400, detail="Username already registered")
         
-        hashed = pwd_context.hash(user.password)
+        hashed = hash_password(user.password)
         db_user = User(username=user.username, email=user.email, hashed_password=hashed)
         db.add(db_user)
         db.commit()
@@ -60,7 +67,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == form_data.username).first()
-    if not user or not pwd_context.verify(form_data.password, user.hashed_password):
+    if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect username or password")
     
     token = create_access_token({"sub": user.username})

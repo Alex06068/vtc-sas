@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.sql import func
 from .database import Base
 
@@ -14,24 +14,32 @@ class User(Base):
 class Course(Base):
     __tablename__ = "courses"
     id = Column(Integer, primary_key=True, index=True)
-    code = Column(String, unique=True, index=True)  # e.g. IT114115
+    code = Column(String, unique=True, index=True)
     name = Column(String, nullable=False)
     description = Column(Text)
     teacher_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+class Enrollment(Base):
+    __tablename__ = "enrollments"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    course_id = Column(Integer, ForeignKey("courses.id"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (UniqueConstraint('user_id', 'course_id', name='uq_enrollment'),)
+
 class Module(Base):
     __tablename__ = "modules"
     id = Column(Integer, primary_key=True, index=True)
     course_id = Column(Integer, ForeignKey("courses.id"))
-    title = Column(String, nullable=False)  # e.g. Week 1: Introduction
+    title = Column(String, nullable=False)
     order = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Task(Base):
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))  # creator or personal
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=True)
     title = Column(String, nullable=False)
     due_date = Column(DateTime(timezone=True))

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Optional
 from ..database import get_db
-from ..models import Course, Module, User
+from ..models import Course, Module, Enrollment, User
 from .auth import get_current_user
 
 router = APIRouter()
@@ -30,7 +30,32 @@ def create_course(course: CourseCreate, current_user: User = Depends(get_current
 
 @router.get("/")
 def list_courses(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # For now return all courses; later can filter by enrollment
     return db.query(Course).all()
+
+@router.post("/join/{course_code}")
+def join_course(course_code: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    course = db.query(Course).filter(Course.code == course_code).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    existing = db.query(Enrollment).filter(
+        Enrollment.user_id == current_user.id,
+        Enrollment.course_id == course.id
+    ).first()
+    if existing:
+        return {"message": "Already enrolled"}
+    en = Enrollment(user_id=current_user.id, course_id=course.id)
+    db.add(en)
+    db.commit()
+    return {"message": f"Joined {course.code}"}
+
+@router.get("/my")
+def my_courses(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    enrollments = db.query(Enrollment).filter(Enrollment.user_id == current_user.id).all()
+    course_ids = [e.course_id for e in enrollments]
+    if not course_ids:
+        return []
+    return db.query(Course).filter(Course.id.in_(course_ids)).all()
 
 @router.post("/{course_id}/modules")
 def add_module(course_id: int, module: ModuleCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):

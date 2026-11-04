@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>我的课程 - VTC-SAS</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #f5f7fa; }
+    nav { background: #1a73e8; color: white; padding: 12px 24px; display: flex; gap: 24px; }
+    nav a { color: white; text-decoration: none; }
+    .container { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+    .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .title { font-weight: 600; font-size: 18px; }
+    .meta { color: #666; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <strong>VTC-SAS</strong>
+    <a href="index.html">首页</a>
+    <a href="courses.html">我的课程</a>
+    <a href="assignments.html">我的作业</a>
+    <a href="attendance.html">出席</a>
+    <a href="chat.html">Chatbot</a>
+  </nav>
+  <div class="container">
+    <h1>我的课程</h1>
+    <div id="list">加载中...</div>
+  </div>
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) location.href = 'index.html';
+
+    async function load() {
+      const res = await fetch('/api/courses/my', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const courses = await res.json();
+      const list = document.getElementById('list');
+      if (!courses.length) {
+        list.innerHTML = '<p>暂无课程。可以在 Chatbot 里说「加入课程 XXX」</p>';
+        return;
+      }
+      list.innerHTML = courses.map(c => `
+        <div class="card">
+          <div class="title">${c.code}</div>
+          <div class="meta">${c.name}</div>
+        </div>
+      `).join('');
+    }
+    load();
+  </script>
+</body>
+</html>

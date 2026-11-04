@@ -2,81 +2,41 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VTC-SAS</title>
+  <title>Chatbot - VTC-SAS</title>
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f5f5f5; }
-    .app { display: flex; height: 100vh; }
-    .sidebar { width: 300px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
-    .sidebar h3 { margin: 0; padding: 12px 16px; background: #1a73e8; color: white; font-size: 15px; }
-    .section { border-bottom: 1px solid #eee; }
-    #course-list, #assignment-list { max-height: 40vh; overflow-y: auto; padding: 8px; }
-    .item { padding: 8px 10px; margin-bottom: 6px; background: #f8f9fa; border-radius: 6px; font-size: 13px; }
-    .item .title { font-weight: 600; }
-    .item .meta { color: #666; font-size: 12px; }
-    .main { flex: 1; display: flex; flex-direction: column; }
-    header { background: #1a73e8; color: white; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+    body { font-family: system-ui, sans-serif; margin: 0; background: #f5f7fa; height: 100vh; display: flex; flex-direction: column; }
+    nav { background: #1a73e8; color: white; padding: 12px 24px; display: flex; gap: 24px; }
+    nav a { color: white; text-decoration: none; }
     #messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-    .msg { max-width: 75%; padding: 10px 14px; border-radius: 16px; line-height: 1.4; white-space: pre-wrap; }
+    .msg { max-width: 70%; padding: 10px 14px; border-radius: 16px; white-space: pre-wrap; }
     .user { align-self: flex-end; background: #1a73e8; color: white; }
     .bot { align-self: flex-start; background: white; border: 1px solid #ddd; }
-    .input-area { display: flex; padding: 12px; background: white; border-top: 1px solid #ddd; gap: 8px; }
-    #input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 24px; outline: none; }
-    button { padding: 0 20px; background: #1a73e8; color: white; border: none; border-radius: 24px; cursor: pointer; }
-    .login-box { max-width: 400px; margin: 100px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .login-box input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; }
-    .login-box button { width: 100%; padding: 12px; margin-top: 10px; }
-    #logout { background: #666; padding: 6px 12px; border-radius: 6px; font-size: 13px; }
+    .input-area { display: flex; padding: 12px; background: white; gap: 8px; }
+    #input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 24px; }
+    button { padding: 0 20px; background: #1a73e8; color: white; border: none; border-radius: 24px; }
   </style>
 </head>
 <body>
-  <div id="login-screen" class="login-box">
-    <h2 style="text-align:center">VTC-SAS Login</h2>
-    <input id="username" type="text" placeholder="Username" value="Ting">
-    <input id="password" type="password" placeholder="Password" value="Ting">
-    <button id="login-btn">Login</button>
-  </div>
-
-  <div id="app-screen" class="app" style="display:none;">
-    <div class="sidebar">
-      <div class="section">
-        <h3>我的课程</h3>
-        <div id="course-list">加载中...</div>
-      </div>
-      <div class="section" style="flex:1; display:flex; flex-direction:column;">
-        <h3>我的作业</h3>
-        <div id="assignment-list">加载中...</div>
-      </div>
-    </div>
-    <div class="main">
-      <header>
-        <span>VTC-SAS Academic Assistant</span>
-        <button id="logout">Logout</button>
-      </header>
-      <div id="messages"></div>
-      <div class="input-area">
-        <input id="input" type="text" placeholder="创建课程、加入课程、贴作业、签到..." autocomplete="off">
-        <button id="send">发送</button>
-      </div>
-    </div>
+  <nav>
+    <strong>VTC-SAS</strong>
+    <a href="index.html">首页</a>
+    <a href="courses.html">我的课程</a>
+    <a href="assignments.html">我的作业</a>
+    <a href="attendance.html">出席</a>
+    <a href="chat.html">Chatbot</a>
+  </nav>
+  <div id="messages"></div>
+  <div class="input-area">
+    <input id="input" type="text" placeholder="输入消息..." autocomplete="off">
+    <button id="send">发送</button>
   </div>
 
   <script>
-    const loginScreen = document.getElementById('login-screen');
-    const appScreen = document.getElementById('app-screen');
+    const token = localStorage.getItem('token');
+    if (!token) location.href = 'index.html';
+
     const messagesEl = document.getElementById('messages');
     const inputEl = document.getElementById('input');
-    const assList = document.getElementById('assignment-list');
-    const courseList = document.getElementById('course-list');
-    let token = localStorage.getItem('token');
-
-    function showApp() {
-      loginScreen.style.display = 'none';
-      appScreen.style.display = 'flex';
-      addMessage('你好！你可以：\n- 创建课程（「创建课程 IT114115 Cloud Computing」）\n- 加入课程（「加入课程 IT114115」）\n- 贴作业信息保存截止日期\n- 问「我有哪些作业/课程」\n- 说「今天签到」', false);
-      loadAll();
-    }
 
     function addMessage(text, isUser) {
       const div = document.createElement('div');
@@ -86,66 +46,11 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    async function loadAll() {
-      await Promise.all([loadCourses(), loadAssignments()]);
-    }
+    addMessage('你好！我是 VTC 学术助手。你可以创建/加入课程、保存作业、查询作业或签到。', false);
 
-    async function loadCourses() {
-      try {
-        const res = await fetch('/api/courses/my', { headers: { 'Authorization': 'Bearer ' + token } });
-        const courses = await res.json();
-        if (!courses.length) {
-          courseList.innerHTML = '<div style="color:#666;padding:8px">暂无课程（可说「加入课程 XXX」）</div>';
-          return;
-        }
-        courseList.innerHTML = courses.map(c => `<div class="item"><div class="title">${c.code}</div><div class="meta">${c.name}</div></div>`).join('');
-      } catch (e) {
-        courseList.innerHTML = '<div style="color:#c00">加载失败</div>';
-      }
-    }
-
-    async function loadAssignments() {
-      try {
-        const res = await fetch('/api/tasks/', { headers: { 'Authorization': 'Bearer ' + token } });
-        const tasks = await res.json();
-        if (!tasks.length) {
-          assList.innerHTML = '<div style="color:#666;padding:8px">暂无作业</div>';
-          return;
-        }
-        assList.innerHTML = tasks.map(t => {
-          const due = t.due_date ? t.due_date.split('T')[0] : '无截止日期';
-          const w = t.weighting ? ` · ${t.weighting}` : '';
-          return `<div class="item"><div class="title">${t.title}</div><div class="meta">${due}${w}</div></div>`;
-        }).join('');
-      } catch (e) {
-        assList.innerHTML = '<div style="color:#c00">加载失败</div>';
-      }
-    }
-
-    async function login() {
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      const form = new URLSearchParams();
-      form.append('username', username);
-      form.append('password', password);
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: form
-      });
-      const data = await res.json();
-      if (res.ok) {
-        token = data.access_token;
-        localStorage.setItem('token', token);
-        showApp();
-      } else {
-        alert('Login failed: ' + (data.detail || ''));
-      }
-    }
-
-    async function sendMessage() {
+    async function send() {
       const text = inputEl.value.trim();
-      if (!text || !token) return;
+      if (!text) return;
       addMessage(text, true);
       inputEl.value = '';
       try {
@@ -158,29 +63,14 @@
           body: JSON.stringify({ message: text })
         });
         const data = await res.json();
-        if (res.ok) {
-          addMessage(data.reply, false);
-          loadAll();
-        } else if (res.status === 401) {
-          localStorage.removeItem('token');
-          location.reload();
-        } else {
-          addMessage('错误: ' + (data.detail || ''), false);
-        }
+        addMessage(data.reply || '错误', false);
       } catch (e) {
         addMessage('网络错误', false);
       }
     }
 
-    document.getElementById('login-btn').addEventListener('click', login);
-    document.getElementById('logout').addEventListener('click', () => {
-      localStorage.removeItem('token');
-      location.reload();
-    });
-    document.getElementById('send').addEventListener('click', sendMessage);
-    inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
-
-    if (token) showApp();
+    document.getElementById('send').addEventListener('click', send);
+    inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
   </script>
 </body>
 </html>

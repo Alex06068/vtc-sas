@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VTC-SAS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f5f7fa; }
+    nav { background: #1a73e8; color: white; padding: 12px 24px; display: flex; gap: 24px; align-items: center; }
+    nav a { color: white; text-decoration: none; font-weight: 500; }
+    nav a:hover { text-decoration: underline; }
+    .container { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+    .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    h1 { margin-top: 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .item { padding: 12px; background: #f8f9fa; border-radius: 8px; }
+    .item .title { font-weight: 600; }
+    .meta { color: #666; font-size: 13px; margin-top: 4px; }
+    .login-box { max-width: 400px; margin: 80px auto; background: white; padding: 32px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+    input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
+    button { padding: 12px 24px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="login-screen" class="login-box">
+    <h2 style="text-align:center">VTC-SAS Login</h2>
+    <input id="username" type="text" placeholder="Username" value="Ting">
+    <input id="password" type="password" placeholder="Password" value="Ting">
+    <button id="login-btn" style="width:100%">Login</button>
+  </div>
+
+  <div id="app" style="display:none;">
+    <nav>
+      <strong>VTC-SAS</strong>
+      <a href="index.html">首页</a>
+      <a href="courses.html">我的课程</a>
+      <a href="assignments.html">我的作业</a>
+      <a href="attendance.html">出席</a>
+      <a href="chat.html">Chatbot</a>
+      <a href="#" id="logout" style="margin-left:auto">Logout</a>
+    </nav>
+    <div class="container">
+      <h1>Dashboard</h1>
+      <div class="grid">
+        <div class="card">
+          <h3>我的课程</h3>
+          <div id="course-summary">加载中...</div>
+        </div>
+        <div class="card">
+          <h3>即将到期的作业</h3>
+          <div id="task-summary">加载中...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const loginScreen = document.getElementById('login-screen');
+    const app = document.getElementById('app');
+
+    if (token) {
+      loginScreen.style.display = 'none';
+      app.style.display = 'block';
+      loadDashboard();
+    }
+
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const form = new URLSearchParams();
+      form.append('username', username);
+      form.append('password', password);
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: form
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('token', data.access_token);
+        location.reload();
+      } else {
+        alert('Login failed');
+      }
+    });
+
+    document.getElementById('logout').addEventListener('click', () => {
+      localStorage.removeItem('token');
+      location.reload();
+    });
+
+    async function loadDashboard() {
+      const headers = { 'Authorization': 'Bearer ' + token };
+      try {
+        const [cRes, tRes] = await Promise.all([
+          fetch('/api/courses/my', { headers }),
+          fetch('/api/tasks/', { headers })
+        ]);
+        const courses = await cRes.json();
+        const tasks = await tRes.json();
+
+        document.getElementById('course-summary').innerHTML = courses.length
+          ? courses.slice(0, 3).map(c => `<div class="item"><div class="title">${c.code}</div><div class="meta">${c.name}</div></div>`).join('')
+          : '暂无课程';
+
+        document.getElementById('task-summary').innerHTML = tasks.length
+          ? tasks.slice(0, 4).map(t => {
+              const due = t.due_date ? t.due_date.split('T')[0] : '无截止日期';
+              return `<div class="item"><div class="title">${t.title}</div><div class="meta">${due}</div></div>`;
+            }).join('')
+          : '暂无作业';
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  </script>
+</body>
+</html>

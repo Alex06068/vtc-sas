@@ -29,10 +29,10 @@ if os.path.exists(static_dir):
 
 @app.get("/")
 def root():
-    chat_path = os.path.join(static_dir, "chat.html")
-    if os.path.exists(chat_path):
-        return FileResponse(chat_path)
-    return {"message": "VTC Smart Academic Scheduler API is running"}
+    index_path = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "VTC-SAS is running"}
 
 @app.on_event("startup")
 def startup():

@@ -51,7 +51,7 @@ tools = [
         "type": "function",
         "function": {
             "name": "create_course",
-            "description": "Create a new course",
+            "description": "Create a new course (teacher only)",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -117,7 +117,6 @@ def execute_tool(name: str, args: dict, user: User, db: Session):
         db.commit()
         return f"Saved: {args['title']}" + (f" (linked to {args.get('course_code')})" if course_id else "")
     elif name == "list_assignments":
-        # Personal + enrolled course tasks
         personal = db.query(Task).filter(Task.user_id == user.id).all()
         ens = db.query(Enrollment).filter(Enrollment.user_id == user.id).all()
         course_ids = [e.course_id for e in ens]
@@ -136,6 +135,8 @@ def execute_tool(name: str, args: dict, user: User, db: Session):
             lines.append(f"- {t.title}{course_info} ({t.weighting or ''}) due {due}")
         return "Assignments:\n" + "\n".join(lines)
     elif name == "create_course":
+        if user.role != "teacher":
+            return "Only teachers can create courses."
         existing = db.query(Course).filter(Course.code == args["code"]).first()
         if existing:
             return "Course already exists"
@@ -177,7 +178,7 @@ def execute_tool(name: str, args: dict, user: User, db: Session):
 def chat(request: ChatRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         messages = [
-            {"role": "system", "content": "You are an academic assistant. Use tools to create/join courses, save/list assignments (personal or course-linked), or check in. When saving assignment with a course, mention the course_code."},
+            {"role": "system", "content": "You are an academic assistant. Teachers can create courses. Students can join courses, view assignments, and check in. Use tools accordingly."},
             {"role": "user", "content": request.message}
         ]
         response = client.chat.completions.create(

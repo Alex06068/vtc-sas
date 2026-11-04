@@ -1,8 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from openai import OpenAI
-from .auth import get_current_user
-from ..models import User
 
 router = APIRouter()
 
@@ -19,7 +17,7 @@ class ChatResponse(BaseModel):
     reply: str
 
 @router.post("/", response_model=ChatResponse)
-def chat(request: ChatRequest, current_user: User = Depends(get_current_user)):
+def chat(request: ChatRequest):
     try:
         response = client.chat.completions.create(
             model="deepseek-chat",

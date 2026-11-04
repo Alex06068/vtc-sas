@@ -178,16 +178,28 @@ def chat(request: ChatRequest, current_user: User = Depends(get_current_user), d
             max_tokens=500
         )
         msg = response.choices[0].message
+
         if msg.tool_calls:
+            # Append assistant message only once
+            messages.append(msg)
             for tc in msg.tool_calls:
                 args = json.loads(tc.function.arguments or "{}")
                 result = execute_tool(tc.function.name, args, current_user, db)
-                messages.append(msg)
-                messages.append({"role": "tool", "tool_call_id": tc.id, "content": result})
-            final = client.chat.completions.create(model="deepseek-chat", messages=messages, max_tokens=500)
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": result
+                })
+
+            final = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=messages,
+                max_tokens=500
+            )
             reply = final.choices[0].message.content
         else:
             reply = msg.content or "Sorry."
+
         return {"reply": reply}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

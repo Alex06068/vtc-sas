@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from ..database import get_db
 from ..models import Course, Module, Enrollment, User
-from .auth import get_current_user
+from .auth import get_current_user, require_teacher
 
 router = APIRouter()
 
@@ -18,7 +18,7 @@ class ModuleCreate(BaseModel):
     order: int = 0
 
 @router.post("/")
-def create_course(course: CourseCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_course(course: CourseCreate, current_user: User = Depends(require_teacher), db: Session = Depends(get_db)):
     existing = db.query(Course).filter(Course.code == course.code).first()
     if existing:
         raise HTTPException(status_code=400, detail="Course code already exists")
@@ -30,7 +30,6 @@ def create_course(course: CourseCreate, current_user: User = Depends(get_current
 
 @router.get("/")
 def list_courses(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # For now return all courses; later can filter by enrollment
     return db.query(Course).all()
 
 @router.post("/join/{course_code}")
@@ -58,10 +57,12 @@ def my_courses(current_user: User = Depends(get_current_user), db: Session = Dep
     return db.query(Course).filter(Course.id.in_(course_ids)).all()
 
 @router.post("/{course_id}/modules")
-def add_module(course_id: int, module: ModuleCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def add_module(course_id: int, module: ModuleCreate, current_user: User = Depends(require_teacher), db: Session = Depends(get_db)):
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
+    if course.teacher_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the course teacher can add modules")
     db_mod = Module(course_id=course_id, title=module.title, order=module.order)
     db.add(db_mod)
     db.commit()

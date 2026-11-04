@@ -17,7 +17,6 @@ SECRET_KEY = "your-super-secret-key-change-this-in-production"
 ALGORITHM = "HS256"
 
 def hash_password(password: str) -> str:
-    # bcrypt has a 72-byte limit
     return pwd_context.hash(password[:72])
 
 def verify_password(plain: str, hashed: str) -> bool:
@@ -43,6 +42,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=401, detail="User not found")
     return user
 
+def require_teacher(current_user: User = Depends(get_current_user)):
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Teacher role required")
+    return current_user
+
 @router.post("/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     try:
@@ -51,7 +55,12 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Username already registered")
         
         hashed = hash_password(user.password)
-        db_user = User(username=user.username, email=user.email, hashed_password=hashed)
+        db_user = User(
+            username=user.username,
+            email=user.email,
+            hashed_password=hashed,
+            role=user.role or "student"
+        )
         db.add(db_user)
         db.commit()
         db.refresh(db_user)

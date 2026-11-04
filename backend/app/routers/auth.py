@@ -47,6 +47,15 @@ def require_teacher(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Teacher role required")
     return current_user
 
+@router.get("/me")
+def get_me(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "role": current_user.role
+    }
+
 @router.post("/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     try:

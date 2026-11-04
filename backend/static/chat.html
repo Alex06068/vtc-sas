@@ -56,7 +56,7 @@
       </header>
       <div id="messages"></div>
       <div class="input-area">
-        <input id="input" type="text" placeholder="创建课程、贴作业、签到..." autocomplete="off">
+        <input id="input" type="text" placeholder="创建课程、加入课程、贴作业、签到..." autocomplete="off">
         <button id="send">发送</button>
       </div>
     </div>
@@ -74,7 +74,7 @@
     function showApp() {
       loginScreen.style.display = 'none';
       appScreen.style.display = 'flex';
-      addMessage('你好！你可以：\n- 创建课程（如「创建课程 IT114115 Cloud Computing」）\n- 贴作业信息保存截止日期\n- 问「我有哪些作业/课程」\n- 说「今天签到」', false);
+      addMessage('你好！你可以：\n- 创建课程（「创建课程 IT114115 Cloud Computing」）\n- 加入课程（「加入课程 IT114115」）\n- 贴作业信息保存截止日期\n- 问「我有哪些作业/课程」\n- 说「今天签到」', false);
       loadAll();
     }
 
@@ -92,10 +92,10 @@
 
     async function loadCourses() {
       try {
-        const res = await fetch('/api/courses/', { headers: { 'Authorization': 'Bearer ' + token } });
+        const res = await fetch('/api/courses/my', { headers: { 'Authorization': 'Bearer ' + token } });
         const courses = await res.json();
         if (!courses.length) {
-          courseList.innerHTML = '<div style="color:#666;padding:8px">暂无课程</div>';
+          courseList.innerHTML = '<div style="color:#666;padding:8px">暂无课程（可说「加入课程 XXX」）</div>';
           return;
         }
         courseList.innerHTML = courses.map(c => `<div class="item"><div class="title">${c.code}</div><div class="meta">${c.name}</div></div>`).join('');

@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from .database import engine, Base
 from .routers import auth, tasks, chat, attendance, courses
@@ -33,6 +32,10 @@ def serve_page(filename: str):
 
 @app.get("/")
 def root():
+    return serve_page("index.html")
+
+@app.get("/index.html")
+def index_page():
     return serve_page("index.html")
 
 @app.get("/courses.html")

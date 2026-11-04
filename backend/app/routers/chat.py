@@ -4,7 +4,7 @@ from openai import OpenAI
 from sqlalchemy.orm import Session
 from datetime import datetime, date
 from ..database import get_db
-from ..models import Task, User, Attendance, Course, Module
+from ..models import Task, User, Attendance, Course, Module, Enrollment
 from .auth import get_current_user
 import json
 
@@ -43,7 +43,7 @@ tools = [
         "type": "function",
         "function": {
             "name": "list_assignments",
-            "description": "List assignments",
+            "description": "List my assignments",
             "parameters": {"type": "object", "properties": {}}
         }
     },
@@ -65,8 +65,22 @@ tools = [
     {
         "type": "function",
         "function": {
-            "name": "list_courses",
-            "description": "List all courses",
+            "name": "join_course",
+            "description": "Join/enroll in a course by code",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "course_code": {"type": "string"}
+                },
+                "required": ["course_code"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_my_courses",
+            "description": "List courses I have joined",
             "parameters": {"type": "object", "properties": {}}
         }
     },
@@ -119,11 +133,23 @@ def execute_tool(name: str, args: dict, user: User, db: Session):
         db.add(c)
         db.commit()
         return f"Created course {args['code']}: {args['name']}"
-    elif name == "list_courses":
-        courses = db.query(Course).all()
-        if not courses:
-            return "No courses yet."
-        return "Courses:\n" + "\n".join([f"- {c.code}: {c.name}" for c in courses])
+    elif name == "join_course":
+        course = db.query(Course).filter(Course.code == args["course_code"]).first()
+        if not course:
+            return "Course not found"
+        existing = db.query(Enrollment).filter(Enrollment.user_id == user.id, Enrollment.course_id == course.id).first()
+        if existing:
+            return "Already joined"
+        db.add(Enrollment(user_id=user.id, course_id=course.id))
+        db.commit()
+        return f"Joined {course.code}"
+    elif name == "list_my_courses":
+        ens = db.query(Enrollment).filter(Enrollment.user_id == user.id).all()
+        if not ens:
+            return "You have not joined any courses."
+        ids = [e.course_id for e in ens]
+        courses = db.query(Course).filter(Course.id.in_(ids)).all()
+        return "My courses:\n" + "\n".join([f"- {c.code}: {c.name}" for c in courses])
     elif name == "check_in_attendance":
         today = date.today().isoformat()
         status = args.get("status", "present")
@@ -141,7 +167,7 @@ def execute_tool(name: str, args: dict, user: User, db: Session):
 def chat(request: ChatRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         messages = [
-            {"role": "system", "content": "You are an academic assistant. Use tools to save/list assignments, create/list courses, or check in attendance."},
+            {"role": "system", "content": "You are an academic assistant. Use tools to create/join courses, save/list assignments, or check in. When user says join a course, use join_course."},
             {"role": "user", "content": request.message}
         ]
         response = client.chat.completions.create(

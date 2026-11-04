@@ -24,15 +24,32 @@ app.include_router(attendance.router, prefix="/api/attendance", tags=["attendanc
 app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
 
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
-if os.path.exists(static_dir):
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+def serve_page(filename: str):
+    path = os.path.join(static_dir, filename)
+    if os.path.exists(path):
+        return FileResponse(path)
+    return {"detail": "Page not found"}
 
 @app.get("/")
 def root():
-    index_path = os.path.join(static_dir, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"message": "VTC-SAS is running"}
+    return serve_page("index.html")
+
+@app.get("/courses.html")
+def courses_page():
+    return serve_page("courses.html")
+
+@app.get("/assignments.html")
+def assignments_page():
+    return serve_page("assignments.html")
+
+@app.get("/attendance.html")
+def attendance_page():
+    return serve_page("attendance.html")
+
+@app.get("/chat.html")
+def chat_page():
+    return serve_page("chat.html")
 
 @app.on_event("startup")
 def startup():

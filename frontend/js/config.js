@@ -1,13 +1,15 @@
 /**
- * 前端配置。
+ * Front-end configuration.
  *
- * 默认规则（一般不用改）：
- *   1. 同源部署（把 frontend 内容放进 backend/static/，从 127.0.0.1:8000 访问）→ 空字符串，走 /api/... 相对路径；
- *   2. 本机用独立静态服务器跑前端（例如 http://127.0.0.1:5500）→ 自动指向 http://127.0.0.1:8000；
- *   3. 直接双击打开 html（file://）→ 同样指向 http://127.0.0.1:8000。
+ * Default resolution order:
+ *   1. Same-origin deployment (frontend copied into backend/static, served from
+ *      127.0.0.1:8000) -> empty base, requests go to /api/... on the same origin.
+ *   2. A separate static server on this machine (e.g. http://127.0.0.1:5500)
+ *      -> point back to http://127.0.0.1:8000.
+ *   3. Opening the HTML files directly (file://) -> same, http://127.0.0.1:8000.
  *
- * 如果后端不在本机 8000 端口（例如部署到服务器 / 换成 9000），
- * 就把 API_BASE 直接写成后端地址，例如 "http://192.168.1.10:9000"。
+ * If the backend lives somewhere else, just set API_BASE to that origin,
+ * for example "http://192.168.1.10:9000".
  */
 window.APP_CONFIG = {
   API_BASE: (function () {

@@ -1,6 +1,6 @@
 /**
- * 作业列表：显示作业名称、课程、截止日期、weighting（权重）与状态。
- * 支持按课程筛选、按名称搜索，按截止日期升序排列。
+ * Assignment list: title, course, due date, weighting and status.
+ * Supports a course filter (?course=<id>), a title search, and sorts by due date.
  */
 (function () {
   'use strict';
@@ -25,7 +25,7 @@
     query: ''
   };
 
-  // 从课程卡片点进来时带 ?course=<id>，预选课程筛选
+  // Course cards link here with ?course=<id>, which pre-selects the filter.
   try {
     const params = new URLSearchParams(window.location.search);
     state.filter = params.get('course') || '';
@@ -33,7 +33,7 @@
     state.filter = '';
   }
 
-  /* ---------------- 数据 ---------------- */
+  /* ---------------- data ---------------- */
 
   function dueTime(task) {
     if (!task.due) return Infinity;
@@ -51,7 +51,7 @@
   }
 
   function load() {
-    UI.setState(statusEl, 'loading', '正在加载作业…');
+    UI.setState(statusEl, 'loading', 'Loading assignments…');
     return Promise.all([
       window.Api.getTasks(),
       window.Api.getCourses().catch(function () { return null; })
@@ -67,14 +67,14 @@
       })
       .catch(function (err) {
         if (err && err.status === 401) return;
-        UI.setState(statusEl, 'error', (err && err.message) || '作业加载失败，请稍后重试。', load);
+        UI.setState(statusEl, 'error', (err && err.message) || 'Could not load your assignments.', load);
       });
   }
 
-  /* ---------------- 筛选与渲染 ---------------- */
+  /* ---------------- filter and render ---------------- */
 
   function populateCourseFilter() {
-    const options = ['<option value="">全部课程</option>'].concat(
+    const options = ['<option value="">All courses</option>'].concat(
       state.courses.map(function (course) {
         const id = course.id !== undefined && course.id !== null ? String(course.id) : '';
         const label = (course.code ? course.code + ' · ' : '') + course.name;
@@ -95,7 +95,7 @@
     const course = state.courses.find(function (item) {
       return String(item.id) === String(courseId);
     });
-    if (!course) return '课程 #' + courseId;
+    if (!course) return 'Course #' + courseId;
     return course.code ? course.code : course.name;
   }
 
@@ -132,7 +132,7 @@
 
     if (!state.tasks.length) {
       tbody.innerHTML = '';
-      UI.setState(statusEl, 'empty', '暂时没有作业。作业会出现在你已加入的课程里。');
+      UI.setState(statusEl, 'empty', 'No assignments yet. Assignments show up here once your courses have some.');
       return;
     }
 
@@ -141,7 +141,7 @@
     if (!list.length) {
       tbody.innerHTML =
         '<tr><td colspan="5" class="cell-muted" style="text-align:center;padding:28px;">' +
-        '没有符合筛选条件的作业。</td></tr>';
+        'No assignments match the current filter.</td></tr>';
       return;
     }
 
@@ -159,7 +159,7 @@
     }).join('');
   }
 
-  /* ---------------- 事件 ---------------- */
+  /* ---------------- events ---------------- */
 
   searchInput.addEventListener('input', function () {
     state.query = searchInput.value;
@@ -171,7 +171,7 @@
     render();
   });
 
-  /* ---------------- 启动 ---------------- */
+  /* ---------------- start ---------------- */
 
   UI.initNavbar();
   load();

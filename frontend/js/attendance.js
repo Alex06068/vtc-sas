@@ -1,5 +1,5 @@
 /**
- * 出席记录：显示签到历史，支持今日签到（POST /api/attendance/checkin）。
+ * Attendance page: history plus today's check-in (POST /api/attendance/checkin).
  */
 (function () {
   'use strict';
@@ -25,10 +25,10 @@
 
   todayEl.textContent = today;
 
-  /* ---------------- 渲染 ---------------- */
+  /* ---------------- rendering ---------------- */
 
   function load() {
-    UI.setState(statusEl, 'loading', '正在加载出席记录…');
+    UI.setState(statusEl, 'loading', 'Loading attendance records…');
     return window.Api.getAttendance()
       .then(function (data) {
         state.records = N.asList(data)
@@ -40,12 +40,12 @@
         UI.setState(
           statusEl,
           state.records.length ? null : 'empty',
-          '还没有出席记录。点击上方「签到（出勤）」记下今天。'
+          'No attendance records yet. Use "Check in" above to record today.'
         );
       })
       .catch(function (err) {
         if (err && err.status === 401) return;
-        UI.setState(statusEl, 'error', (err && err.message) || '出席记录加载失败，请稍后重试。', load);
+        UI.setState(statusEl, 'error', (err && err.message) || 'Could not load your attendance records.', load);
       });
   }
 
@@ -64,12 +64,12 @@
     const record = state.records.find(function (item) { return item.date === today; });
     if (!record) {
       todayStatusEl.className = 'badge badge-muted';
-      todayStatusEl.textContent = '尚未签到';
+      todayStatusEl.textContent = 'Not checked in';
       return;
     }
     const meta = N.attendanceStatus(record.status);
     todayStatusEl.className = 'badge ' + meta.cls;
-    todayStatusEl.textContent = '今日：' + meta.label;
+    todayStatusEl.textContent = 'Today: ' + meta.label;
   }
 
   function render() {
@@ -89,16 +89,16 @@
     }).join('');
   }
 
-  /* ---------------- 签到 ---------------- */
+  /* ---------------- check in ---------------- */
 
   function setCheckinBusy(busy) {
     if (!checkinBtn) return;
     if (busy) {
       checkinBtn.dataset.label = checkinBtn.textContent;
-      checkinBtn.textContent = '签到中…';
+      checkinBtn.textContent = 'Checking in…';
       checkinBtn.disabled = true;
     } else {
-      checkinBtn.textContent = checkinBtn.dataset.label || '签到（出勤）';
+      checkinBtn.textContent = checkinBtn.dataset.label || 'Check in (present)';
       checkinBtn.disabled = false;
     }
   }
@@ -108,12 +108,12 @@
       setCheckinBusy(true);
       window.Api.checkin('present')
         .then(function () {
-          UI.toast('签到成功，今天记为出勤');
+          UI.toast('Checked in — today is recorded as present.');
           return load();
         })
         .catch(function (err) {
           if (err && err.status === 401) return;
-          UI.toast((err && err.message) || '签到失败，请稍后重试。', 'error');
+          UI.toast((err && err.message) || 'Check-in failed. Please try again.', 'error');
         })
         .finally(function () {
           setCheckinBusy(false);
@@ -121,7 +121,7 @@
     });
   }
 
-  /* ---------------- 启动 ---------------- */
+  /* ---------------- start ---------------- */
 
   UI.initNavbar();
   load();

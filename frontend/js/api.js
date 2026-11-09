@@ -1,7 +1,8 @@
 /**
- * VTC-SAS API 客户端。
- * 所有接口都需要登录后带 Authorization: Bearer <token>。
- * 登录接口例外：POST /api/auth/login 用 form 表单提交 username + password。
+ * VTC-SAS API client.
+ * Every endpoint except login and register requires "Authorization: Bearer <token>".
+ * Login is form-encoded (username + password) because the backend uses
+ * OAuth2PasswordRequestForm.
  */
 (function () {
   'use strict';
@@ -21,14 +22,14 @@
     }
   }
 
-  /* ---------------- 会话 ---------------- */
+  /* ---------------- session ---------------- */
 
   function getToken() {
     try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; }
   }
 
   function setToken(token) {
-    try { localStorage.setItem(TOKEN_KEY, token); } catch (e) { /* 隐私模式下忽略 */ }
+    try { localStorage.setItem(TOKEN_KEY, token); } catch (e) { /* private mode: ignore */ }
   }
 
   function clearSession() {
@@ -55,7 +56,7 @@
     }
   }
 
-  /* ---------------- 响应解析 ---------------- */
+  /* ---------------- responses ---------------- */
 
   function errorMessage(data) {
     if (!data) return '';
@@ -64,7 +65,7 @@
       if (Array.isArray(data.detail)) {
         return data.detail
           .map(function (item) { return (item && item.msg) || String(item); })
-          .join('；');
+          .join('; ');
       }
       return typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
     }
@@ -73,8 +74,8 @@
   }
 
   /**
-   * 统一请求封装。
-   * @param {string} path  以 / 开头的后端路径
+   * Single request helper.
+   * @param {string} path  backend path starting with /
    * @param {{method?:string, body?:*, form?:boolean, auth?:boolean}} options
    */
   async function request(path, options) {
@@ -98,7 +99,7 @@
       const token = getToken();
       if (!token) {
         redirectToLogin();
-        throw new ApiError('登录状态已失效，请重新登录。', 401, null);
+        throw new ApiError('Your session has expired. Please sign in again.', 401, null);
       }
       headers.Authorization = 'Bearer ' + token;
     }
@@ -108,7 +109,7 @@
       res = await fetch(API_BASE + path, { method: method, headers: headers, body: payload });
     } catch (err) {
       throw new ApiError(
-        '无法连接后端服务。请检查 js/config.js 里的 API_BASE 以及后端是否已启动。',
+        'Could not reach the backend. Check API_BASE in js/config.js and make sure the API is running.',
         0,
         null
       );
@@ -123,19 +124,19 @@
     if (res.status === 401 && auth) {
       clearSession();
       redirectToLogin();
-      throw new ApiError('登录状态已过期，请重新登录。', 401, data);
+      throw new ApiError('Your session has expired. Please sign in again.', 401, data);
     }
 
     if (!res.ok) {
-      throw new ApiError(errorMessage(data) || ('请求失败（HTTP ' + res.status + '）'), res.status, data);
+      throw new ApiError(errorMessage(data) || ('Request failed (HTTP ' + res.status + ')'), res.status, data);
     }
 
     return data;
   }
 
-  /* ---------------- 具体接口 ---------------- */
+  /* ---------------- endpoints ---------------- */
 
-  /** 登录（form 表单：username + password），成功后把 token 存入 localStorage。 */
+  /** Sign in (form encoded). Stores the access token on success. */
   async function login(username, password) {
     const data = await request('/api/auth/login', {
       method: 'POST',
@@ -145,14 +146,14 @@
     });
     const token = data && (data.access_token || data.token);
     if (!token) {
-      throw new ApiError('登录响应里没有 access_token，请检查后端 /api/auth/login。', 0, data);
+      throw new ApiError('The login response did not include an access_token.', 0, data);
     }
     setToken(token);
     setUser({ username: username });
     return data;
   }
 
-  /** 注册（JSON：username + email + password + role），成功后同样返回 token。 */
+  /** Register (JSON). Also stores the returned token. */
   async function register(payload) {
     const data = await request('/api/auth/register', {
       method: 'POST',
@@ -161,44 +162,49 @@
     });
     const token = data && (data.access_token || data.token);
     if (!token) {
-      throw new ApiError('注册成功但响应里没有 access_token。', 0, data);
+      throw new ApiError('Registration succeeded but no access_token was returned.', 0, data);
     }
     setToken(token);
     setUser({ username: payload.username, role: payload.role });
     return data;
   }
 
-  /** 当前登录用户：{ id, username, email, role } */
+  /** Current user: { id, username, email, role } */
   function me() {
     return request('/api/auth/me');
   }
 
-  /** 已加入的课程列表：[{ id, code, name, description, teacher_id, ... }] */
+  /** Enrolled courses: [{ id, code, name, description, teacher_id }] */
   function getCourses() {
     return request('/api/courses/my');
   }
 
-  /** 加入课程：POST /api/courses/join/{course_code} */
+  /** Join a course by code: POST /api/courses/join/{course_code} */
   function joinCourse(courseCode) {
     return request('/api/courses/join/' + encodeURIComponent(courseCode), { method: 'POST' });
   }
 
-  /** 创建课程（需要教师角色）：body { code, name, description? } */
+  /** Create a course (teacher only): { code, name, description? } */
   function createCourse(payload) {
     return request('/api/courses/', { method: 'POST', body: payload });
   }
 
-  /** 我的作业：[{ id, title, due_date, weighting, course_id, is_completed, source }] */
+  /** Modules of one course: [{ id, course_id, title, order }] */
+  function getModules(courseId) {
+    return request('/api/courses/' + encodeURIComponent(courseId) + '/modules');
+  }
+
+  /** My tasks: [{ id, title, due_date, weighting, course_id, is_completed }] */
   function getTasks() {
     return request('/api/tasks/');
   }
 
-  /** 我的出席记录：[{ date: "YYYY-MM-DD", status }] */
+  /** My attendance: [{ date: "YYYY-MM-DD", status }] */
   function getAttendance() {
     return request('/api/attendance/my');
   }
 
-  /** 签到：POST /api/attendance/checkin  body { status: "present" } */
+  /** Check in: POST /api/attendance/checkin { status } */
   function checkin(status) {
     return request('/api/attendance/checkin', {
       method: 'POST',
@@ -206,7 +212,7 @@
     });
   }
 
-  /** Chatbot：POST /api/chat/  body { message }（本前端暂未使用，留作扩展） */
+  /** Chatbot hook (POST /api/chat/); not wired into the UI yet. */
   function chat(message) {
     return request('/api/chat/', { method: 'POST', body: { message: message } });
   }
@@ -224,6 +230,7 @@
     getCourses: getCourses,
     joinCourse: joinCourse,
     createCourse: createCourse,
+    getModules: getModules,
     getTasks: getTasks,
     getAttendance: getAttendance,
     checkin: checkin,

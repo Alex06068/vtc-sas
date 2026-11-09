@@ -1,5 +1,6 @@
 /**
- * 登录 / 注册页。登录成功把 access_token 存入 localStorage 后进入 Dashboard。
+ * Sign in / register page. A successful call stores the access token and
+ * redirects to the dashboard.
  */
 (function () {
   'use strict';
@@ -23,7 +24,7 @@
   const showRegister = document.getElementById('show-register');
   const showLogin = document.getElementById('show-login');
 
-  /* ---------------- 小工具 ---------------- */
+  /* ---------------- small helpers ---------------- */
 
   function showFormError(el, message) {
     if (!el) return;
@@ -41,7 +42,7 @@
     if (!btn) return;
     if (busy) {
       btn.dataset.label = btn.textContent;
-      btn.textContent = busyText || '请稍候…';
+      btn.textContent = busyText || 'Please wait…';
       btn.disabled = true;
     } else {
       btn.textContent = btn.dataset.label || btn.textContent;
@@ -65,12 +66,12 @@
     hideFormError(registerError);
   }
 
-  /* ---------------- 切换表单 ---------------- */
+  /* ---------------- switch forms ---------------- */
 
   if (showRegister) showRegister.addEventListener('click', switchToRegister);
   if (showLogin) showLogin.addEventListener('click', switchToLogin);
 
-  /* ---------------- 登录 ---------------- */
+  /* ---------------- sign in ---------------- */
 
   if (loginForm) {
     loginForm.addEventListener('submit', function (event) {
@@ -81,23 +82,23 @@
       const password = document.getElementById('login-password').value;
 
       if (!username || !password) {
-        showFormError(loginError, '请输入用户名和密码。');
+        showFormError(loginError, 'Enter both your username and password.');
         return;
       }
 
-      setBusy(loginSubmit, true, '登录中…');
+      setBusy(loginSubmit, true, 'Signing in…');
       window.Api.login(username, password)
         .then(function () {
           window.location.replace('index.html');
         })
         .catch(function (err) {
-          showFormError(loginError, (err && err.message) || '登录失败，请检查用户名和密码。');
+          showFormError(loginError, (err && err.message) || 'Sign in failed. Check your username and password.');
           setBusy(loginSubmit, false);
         });
     });
   }
 
-  /* ---------------- 注册 ---------------- */
+  /* ---------------- register ---------------- */
 
   if (registerForm) {
     registerForm.addEventListener('submit', function (event) {
@@ -110,17 +111,17 @@
       const role = document.getElementById('register-role').value;
 
       if (!username || !email || !password) {
-        showFormError(registerError, '用户名、邮箱和密码都需要填写。');
+        showFormError(registerError, 'Username, email and password are all required.');
         return;
       }
 
-      setBusy(registerSubmit, true, '注册中…');
+      setBusy(registerSubmit, true, 'Creating account…');
       window.Api.register({ username: username, email: email, password: password, role: role })
         .then(function () {
           window.location.replace('index.html');
         })
         .catch(function (err) {
-          showFormError(registerError, (err && err.message) || '注册失败，请稍后重试。');
+          showFormError(registerError, (err && err.message) || 'Registration failed. Please try again.');
           setBusy(registerSubmit, false);
         });
     });

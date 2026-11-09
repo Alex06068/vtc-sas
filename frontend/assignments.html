@@ -1,90 +1,113 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>我的作业 · VTC-SAS</title>
-  <link rel="stylesheet" href="css/style.css">
+  <title>Assignments · VTC-SAS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-  <header class="site-navbar">
-    <div class="navbar-inner container">
-      <a class="brand" href="index.html" aria-label="VTC-SAS 首页">
-        <span class="brand-badge" aria-hidden="true">V</span>
-        <span class="brand-text">
-          <strong>VTC-SAS</strong>
-          <small>课程学习平台</small>
-        </span>
-      </a>
-      <nav class="main-nav" aria-label="主导航">
-        <a href="index.html">我的课程</a>
-        <a href="assignments.html" class="active" aria-current="page">作业</a>
-        <a href="attendance.html">出席记录</a>
-      </nav>
-      <div class="navbar-actions">
-        <span class="user-chip" id="nav-user">
-          <span class="user-role" id="nav-role"></span>
-          <span id="nav-username">…</span>
-        </span>
-        <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">退出</button>
-      </div>
-    </div>
-  </header>
+  <aside class="rail" aria-label="Main menu">
+    <a class="rail-btn" href="index.html" title="Dashboard" aria-label="Dashboard">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+    </a>
+    <a class="rail-btn" href="index.html" title="My courses" aria-label="My courses">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v2H4zm0 6h16v2H4zm0 6h10v2H4z"/></svg>
+    </a>
+    <a class="rail-btn is-active" href="assignments.html" title="Assignments" aria-label="Assignments" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6zm8 1v6h6"/></svg>
+    </a>
+    <a class="rail-btn" href="attendance.html" title="Attendance" aria-label="Attendance">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3V2h-2v2H9V2zm13 8v11H4V10z"/></svg>
+    </a>
+    <button class="rail-btn rail-bottom" type="button" title="Collapse menu" aria-label="Collapse menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6z"/></svg>
+    </button>
+  </aside>
 
-  <main class="page">
-    <div class="container">
-      <div class="page-head">
-        <div>
-          <p class="eyebrow">Dashboard · 作业</p>
-          <h1>我的作业</h1>
-          <p class="page-sub">按截止日期排序，显示作业名称、所属课程、截止日期与 weighting（权重）。</p>
+  <div class="app">
+    <header class="site-navbar">
+      <div class="navbar-inner">
+        <a class="brand" href="index.html" aria-label="VTC-SAS home">
+          <span class="brand-badge" aria-hidden="true">V</span>
+          <span class="brand-text">
+            <strong>VTC-SAS</strong>
+            <small>Student Academic System</small>
+          </span>
+        </a>
+        <nav class="main-nav" aria-label="Primary navigation">
+          <a href="index.html">My Courses</a>
+          <a href="assignments.html" class="active" aria-current="page">Assignments</a>
+          <a href="attendance.html">Attendance</a>
+        </nav>
+        <div class="navbar-actions">
+          <span class="user-chip" id="nav-user">
+            <span class="user-role" id="nav-role"></span>
+            <span id="nav-username">&hellip;</span>
+          </span>
+          <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">Sign out</button>
         </div>
       </div>
+    </header>
 
-      <div class="stat-chips" aria-live="polite">
-        <span class="chip"><span class="dot brand" aria-hidden="true"></span>全部 <b id="task-total">0</b></span>
-        <span class="chip"><span class="dot success" aria-hidden="true"></span>待完成 <b id="task-open">0</b></span>
-        <span class="chip"><span class="dot danger" aria-hidden="true"></span>已截止 <b id="task-overdue">0</b></span>
-      </div>
-
-      <div class="toolbar">
-        <div class="search">
-          <input id="task-search" type="search" placeholder="搜索作业名称…" aria-label="搜索作业名称">
+    <main class="page">
+      <div class="container">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Dashboard &middot; Assignments</p>
+            <h1>Assignments</h1>
+            <p class="page-sub">Sorted by due date. Each row shows the assignment, its course, the deadline, the weighting and the current status.</p>
+          </div>
         </div>
-        <select id="course-filter" aria-label="按课程筛选">
-          <option value="">全部课程</option>
-        </select>
-      </div>
 
-      <div class="table-card">
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th scope="col">作业</th>
-                <th scope="col">课程</th>
-                <th scope="col">截止日期</th>
-                <th scope="col">权重</th>
-                <th scope="col">状态</th>
-              </tr>
-            </thead>
-            <tbody id="tasks-body"></tbody>
-          </table>
+        <div class="stat-chips" aria-live="polite">
+          <span class="chip"><span class="dot brand" aria-hidden="true"></span>Total <b id="task-total">0</b></span>
+          <span class="chip"><span class="dot success" aria-hidden="true"></span>Open <b id="task-open">0</b></span>
+          <span class="chip"><span class="dot danger" aria-hidden="true"></span>Overdue <b id="task-overdue">0</b></span>
         </div>
-      </div>
-      <div id="tasks-status" class="state-box" role="status"></div>
-    </div>
-  </main>
 
-  <footer class="site-footer">
-    <div class="container">
-      <span>VTC-SAS · Moodle 风格课程前端</span>
-      <span>数据来自后端 API · 组员 A</span>
-    </div>
-  </footer>
+        <div class="toolbar">
+          <div class="search">
+            <input id="task-search" type="search" placeholder="Search assignments&hellip;" aria-label="Search assignments by title">
+          </div>
+          <select id="course-filter" aria-label="Filter by course">
+            <option value="">All courses</option>
+          </select>
+        </div>
+
+        <div class="table-card">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Assignment</th>
+                  <th scope="col">Course</th>
+                  <th scope="col">Due date</th>
+                  <th scope="col">Weighting</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody id="tasks-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="tasks-status" class="state-box" role="status"></div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <span>VTC-SAS &middot; Moodle-style academic front end</span>
+        <span>Data served by the FastAPI backend</span>
+      </div>
+    </footer>
+  </div>
 
   <noscript>
-    <p style="text-align:center;padding:16px;color:#b3261e">本页面需要启用 JavaScript 才能加载作业数据。</p>
+    <p style="text-align:center;padding:16px;color:#b3261e">JavaScript is required to load your assignments.</p>
   </noscript>
 
   <script defer src="js/config.js"></script>

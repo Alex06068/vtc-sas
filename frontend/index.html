@@ -1,118 +1,142 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>我的课程 · VTC-SAS</title>
-  <link rel="stylesheet" href="css/style.css">
+  <title>My Courses · VTC-SAS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-  <header class="site-navbar">
-    <div class="navbar-inner container">
-      <a class="brand" href="index.html" aria-label="VTC-SAS 首页">
-        <span class="brand-badge" aria-hidden="true">V</span>
-        <span class="brand-text">
-          <strong>VTC-SAS</strong>
-          <small>课程学习平台</small>
-        </span>
-      </a>
-      <nav class="main-nav" aria-label="主导航">
-        <a href="index.html" class="active" aria-current="page">我的课程</a>
-        <a href="assignments.html">作业</a>
-        <a href="attendance.html">出席记录</a>
-      </nav>
-      <div class="navbar-actions">
-        <span class="user-chip" id="nav-user">
-          <span class="user-role" id="nav-role"></span>
-          <span id="nav-username">…</span>
-        </span>
-        <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">退出</button>
-      </div>
-    </div>
-  </header>
+  <!-- Left icon rail -->
+  <aside class="rail" aria-label="Main menu">
+    <a class="rail-btn" href="index.html" title="Dashboard" aria-label="Dashboard">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+    </a>
+    <a class="rail-btn is-active" href="index.html" title="My courses" aria-label="My courses" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v2H4zm0 6h16v2H4zm0 6h10v2H4z"/></svg>
+    </a>
+    <a class="rail-btn" href="assignments.html" title="Assignments" aria-label="Assignments">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6zm8 1v6h6"/></svg>
+    </a>
+    <a class="rail-btn" href="attendance.html" title="Attendance" aria-label="Attendance">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3V2h-2v2H9V2zm13 8v11H4V10z"/></svg>
+    </a>
+    <button class="rail-btn rail-bottom" type="button" title="Collapse menu" aria-label="Collapse menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6z"/></svg>
+    </button>
+  </aside>
 
-  <main class="page">
-    <div class="container">
-      <div class="page-head">
-        <div>
-          <p class="eyebrow">Dashboard · 课程</p>
-          <h1>我的课程</h1>
-          <p class="page-sub">这里显示你已加入的全部课程。点击卡片可以查看该课程的作业。</p>
+  <div class="app">
+    <header class="site-navbar">
+      <div class="navbar-inner">
+        <a class="brand" href="index.html" aria-label="VTC-SAS home">
+          <span class="brand-badge" aria-hidden="true">V</span>
+          <span class="brand-text">
+            <strong>VTC-SAS</strong>
+            <small>Student Academic System</small>
+          </span>
+        </a>
+        <nav class="main-nav" aria-label="Primary navigation">
+          <a href="index.html" class="active" aria-current="page">My Courses</a>
+          <a href="assignments.html">Assignments</a>
+          <a href="attendance.html">Attendance</a>
+        </nav>
+        <div class="navbar-actions">
+          <span class="user-chip" id="nav-user">
+            <span class="user-role" id="nav-role"></span>
+            <span id="nav-username">&hellip;</span>
+          </span>
+          <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">Sign out</button>
         </div>
-        <div class="page-actions">
-          <button class="btn btn-primary" id="join-course-btn" type="button">＋ 加入课程</button>
-          <button class="btn btn-secondary" id="create-course-btn" type="button" hidden>创建课程</button>
+      </div>
+    </header>
+
+    <main class="page">
+      <div class="container">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Dashboard &middot; Courses</p>
+            <h1>My Courses</h1>
+            <p class="page-sub">Every course you are enrolled in. Open a course to see its content, modules and assignments.</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" id="join-course-btn" type="button">+ Join a course</button>
+            <button class="btn btn-secondary" id="create-course-btn" type="button" hidden>Create a course</button>
+          </div>
         </div>
+
+        <div class="stat-chips" aria-live="polite">
+          <span class="chip"><span class="dot brand" aria-hidden="true"></span><b id="course-count">0</b>&nbsp;courses enrolled</span>
+        </div>
+
+        <div id="courses-grid" class="course-grid" aria-live="polite"></div>
+        <div id="courses-status" class="state-box" role="status"></div>
       </div>
+    </main>
 
-      <div class="stat-chips" aria-live="polite">
-        <span class="chip"><span class="dot brand" aria-hidden="true"></span><b id="course-count">0</b> 门课程</span>
+    <footer class="site-footer">
+      <div class="container">
+        <span>VTC-SAS &middot; Moodle-style academic front end</span>
+        <span>Data served by the FastAPI backend</span>
       </div>
+    </footer>
+  </div>
 
-      <div id="courses-grid" class="course-grid" aria-live="polite"></div>
-      <div id="courses-status" class="state-box" role="status"></div>
-    </div>
-  </main>
-
-  <footer class="site-footer">
-    <div class="container">
-      <span>VTC-SAS · Moodle 风格课程前端</span>
-      <span>数据来自后端 API · 组员 A</span>
-    </div>
-  </footer>
-
-  <!-- 加入课程 -->
+  <!-- Join a course -->
   <dialog id="join-dialog" class="modal" aria-labelledby="join-dialog-title">
     <form id="join-form" novalidate>
       <div class="modal-head">
-        <h2 id="join-dialog-title">加入课程</h2>
-        <p>输入教师提供的课程代码，例如 IT114115。</p>
+        <h2 id="join-dialog-title">Join a course</h2>
+        <p>Enter the course code provided by your teacher, for example IT114115.</p>
       </div>
       <div class="modal-body">
         <div class="form-error" id="join-error" role="alert"></div>
         <div class="field">
-          <label for="join-code">课程代码</label>
-          <input id="join-code" name="code" type="text" placeholder="例如 IT114115" autocomplete="off" required>
+          <label for="join-code">Course code</label>
+          <input id="join-code" name="code" type="text" placeholder="e.g. IT114115" autocomplete="off" required>
         </div>
       </div>
       <div class="modal-foot">
-        <button type="button" class="btn btn-secondary" data-close>取消</button>
-        <button type="submit" class="btn btn-primary" id="join-submit">加入课程</button>
+        <button type="button" class="btn btn-secondary" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" id="join-submit">Join course</button>
       </div>
     </form>
   </dialog>
 
-  <!-- 创建课程（仅教师可见） -->
+  <!-- Create a course (teachers only) -->
   <dialog id="create-dialog" class="modal" aria-labelledby="create-dialog-title">
     <form id="create-form" novalidate>
       <div class="modal-head">
-        <h2 id="create-dialog-title">创建课程</h2>
-        <p>创建后会自动加入该课程。</p>
+        <h2 id="create-dialog-title">Create a course</h2>
+        <p>You will be enrolled in the course right after it is created.</p>
       </div>
       <div class="modal-body">
         <div class="form-error" id="create-error" role="alert"></div>
         <div class="field">
-          <label for="create-code">课程代码</label>
-          <input id="create-code" name="code" type="text" placeholder="例如 IT114115" autocomplete="off" required>
+          <label for="create-code">Course code</label>
+          <input id="create-code" name="code" type="text" placeholder="e.g. IT114115" autocomplete="off" required>
         </div>
         <div class="field">
-          <label for="create-name">课程名称</label>
-          <input id="create-name" name="name" type="text" placeholder="例如 Cloud Computing" autocomplete="off" required>
+          <label for="create-name">Course name</label>
+          <input id="create-name" name="name" type="text" placeholder="e.g. Cloud Computing" autocomplete="off" required>
         </div>
         <div class="field">
-          <label for="create-desc">课程简介（可选）</label>
-          <textarea id="create-desc" name="description" placeholder="一句话介绍这门课"></textarea>
+          <label for="create-desc">Description <span class="cell-muted">(optional)</span></label>
+          <textarea id="create-desc" name="description" placeholder="One sentence describing the course"></textarea>
         </div>
       </div>
       <div class="modal-foot">
-        <button type="button" class="btn btn-secondary" data-close>取消</button>
-        <button type="submit" class="btn btn-primary" id="create-submit">创建课程</button>
+        <button type="button" class="btn btn-secondary" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" id="create-submit">Create course</button>
       </div>
     </form>
   </dialog>
 
   <noscript>
-    <p style="text-align:center;padding:16px;color:#b3261e">本页面需要启用 JavaScript 才能加载课程数据。</p>
+    <p style="text-align:center;padding:16px;color:#b3261e">JavaScript is required to load your courses.</p>
   </noscript>
 
   <script defer src="js/config.js"></script>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calendar · VTC-SAS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <aside class="rail" aria-label="Main menu">
+    <a class="rail-btn" href="index.html" title="Dashboard" aria-label="Dashboard">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+    </a>
+    <a class="rail-btn" href="index.html" title="My courses" aria-label="My courses">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v2H4zm0 6h16v2H4zm0 6h10v2H4z"/></svg>
+    </a>
+    <a class="rail-btn" href="assignments.html" title="Assignments" aria-label="Assignments">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6zm8 1v6h6"/></svg>
+    </a>
+    <a class="rail-btn" href="attendance.html" title="Attendance" aria-label="Attendance">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3V2h-2v2H9V2zm13 8v11H4V10z"/></svg>
+    </a>
+    <a class="rail-btn is-active" href="calendar.html" title="Calendar" aria-label="Calendar" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v2H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H10V2zM6 9h12v9H6z"/></svg>
+    </a>
+    <button class="rail-btn rail-bottom" type="button" title="Collapse menu" aria-label="Collapse menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6z"/></svg>
+    </button>
+  </aside>
+
+  <div class="app">
+    <header class="site-navbar">
+      <div class="navbar-inner">
+        <a class="brand" href="index.html" aria-label="VTC-SAS home">
+          <span class="brand-badge" aria-hidden="true">V</span>
+          <span class="brand-text">
+            <strong>VTC-SAS</strong>
+            <small>Student Academic System</small>
+          </span>
+        </a>
+        <nav class="main-nav" aria-label="Primary navigation">
+          <a href="index.html">My Courses</a>
+          <a href="assignments.html">Assignments</a>
+          <a href="attendance.html">Attendance</a>
+          <a href="calendar.html" class="active" aria-current="page">Calendar</a>
+        </nav>
+        <div class="navbar-actions">
+          <span class="user-chip" id="nav-user">
+            <span class="user-role" id="nav-role"></span>
+            <span id="nav-username">&hellip;</span>
+          </span>
+          <button class="btn btn-ghost btn-sm" id="logout-btn" type="button">Sign out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="page">
+      <div class="container">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Calendar &middot; Timetable</p>
+            <h1>Course Calendar</h1>
+            <p class="page-sub">Dates stay clean — colours tell you what is happening: gold = assignment due, red = exam, purple = project milestone, red background = Hong Kong public holiday. Click a day to see details.</p>
+          </div>
+        </div>
+
+        <div class="cal-layout">
+          <section class="cal-main" aria-label="Month calendar">
+            <div class="cal-toolbar">
+              <button class="btn btn-secondary btn-sm" id="cal-prev" type="button" aria-label="Previous month">&lsaquo;</button>
+              <h2 class="cal-month" id="cal-month" aria-live="polite">Loading&hellip;</h2>
+              <button class="btn btn-secondary btn-sm" id="cal-next" type="button" aria-label="Next month">&rsaquo;</button>
+              <button class="btn btn-primary btn-sm" id="cal-today" type="button">Today</button>
+            </div>
+
+            <div class="cal-legend">
+              <span class="chip"><span class="dot gold" aria-hidden="true"></span>Assignment due</span>
+              <span class="chip"><span class="dot danger" aria-hidden="true"></span>Exam</span>
+              <span class="chip"><span class="dot purple" aria-hidden="true"></span>Project</span>
+              <span class="chip"><span class="cal-swatch" aria-hidden="true"></span>Public holiday</span>
+              <span class="chip"><span class="dot success" aria-hidden="true"></span>Today</span>
+            </div>
+
+            <div class="calendar-card">
+              <div class="cal-weekdays" aria-hidden="true">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div class="cal-grid" id="cal-grid"></div>
+            </div>
+
+            <div id="cal-status" class="state-box" role="status"></div>
+          </section>
+
+          <aside class="cal-side" aria-label="Day details and holidays">
+            <section class="panel">
+              <h2 id="detail-title">Selected day</h2>
+              <p class="panel-sub" id="detail-sub"></p>
+              <div id="detail-events" class="cal-detail"></div>
+            </section>
+
+            <section class="panel">
+              <h2>Public holidays</h2>
+              <p class="panel-sub" id="holiday-sub">Hong Kong red-letter days this month.</p>
+              <ul class="cal-list" id="holiday-list"></ul>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <span>VTC-SAS &middot; Moodle-style academic front end</span>
+        <span>Deadlines from the API &middot; Holidays from the 2026 GovHK gazette</span>
+      </div>
+    </footer>
+  </div>
+
+  <noscript>
+    <p style="text-align:center;padding:16px;color:#b3261e">JavaScript is required to load the calendar.</p>
+  </noscript>
+
+  <script defer src="js/config.js"></script>
+  <script defer src="js/api.js"></script>
+  <script defer src="js/normalize.js"></script>
+  <script defer src="js/holidays.js"></script>
+  <script defer src="js/ui.js"></script>
+  <script defer src="js/calendar.js"></script>
+</body>
+</html>

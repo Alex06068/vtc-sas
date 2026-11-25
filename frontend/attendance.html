@@ -8,6 +8,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/app.css">
+  <style>
+    .checkin-feedback { margin: 10px 0 0; font-size: 0.95rem; }
+    .checkin-feedback.is-error { color: #b3261e; font-weight: 500; }
+  </style>
 </head>
 <body>
   <aside class="rail" aria-label="Main menu">
@@ -22,6 +26,12 @@
     </a>
     <a class="rail-btn is-active" href="attendance.html" title="Attendance" aria-label="Attendance" aria-current="page">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3V2h-2v2H9V2zm13 8v11H4V10z"/></svg>
+    </a>
+    <a class="rail-btn" href="calendar.html" title="Calendar" aria-label="Calendar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v2H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H10V2zM6 9h12v9H6z"/></svg>
+    </a>
+    <a class="rail-btn" href="chat.html" title="Chatbot" aria-label="Chatbot">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4V5z"/></svg>
     </a>
     <button class="rail-btn rail-bottom" type="button" title="Collapse menu" aria-label="Collapse menu">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6z"/></svg>
@@ -39,9 +49,12 @@
           </span>
         </a>
         <nav class="main-nav" aria-label="Primary navigation">
-          <a href="index.html">My Courses</a>
+                    <a href="index.html">My Courses</a>
           <a href="assignments.html">Assignments</a>
           <a href="attendance.html" class="active" aria-current="page">Attendance</a>
+          <a href="calendar.html">Calendar</a>
+          <a href="chat.html">Chatbot</a>
+
         </nav>
         <div class="navbar-actions">
           <span class="user-chip" id="nav-user">
@@ -69,9 +82,13 @@
             <p class="panel-sub">Today is <span id="today-date" class="today-date"></span></p>
             <div class="checkin-row">
               <span id="today-status" class="badge badge-muted">Not checked in</span>
+              <select id="checkin-course" aria-label="Course for today's check-in">
+                <option value="">No specific course</option>
+              </select>
               <button class="btn btn-primary" id="checkin-btn" type="button">Check in (present)</button>
             </div>
-            <p class="checkin-note">Checking in records today as <strong>present</strong>.</p>
+            <p id="checkin-feedback" class="checkin-feedback" role="alert" hidden></p>
+            <p class="checkin-note">Checking in records today as <strong>present</strong>. When school computer IPs are configured, students can only check in from those addresses.</p>
           </div>
           <div class="panel">
             <h2>Overview</h2>
@@ -90,6 +107,7 @@
               <thead>
                 <tr>
                   <th scope="col">Date</th>
+                  <th scope="col">Course</th>
                   <th scope="col">Status</th>
                 </tr>
               </thead>

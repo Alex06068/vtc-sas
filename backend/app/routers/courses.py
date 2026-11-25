@@ -17,6 +17,16 @@ class ModuleCreate(BaseModel):
     title: str
     order: int = 0
 
+def _enroll(db: Session, user_id: int, course_id: int) -> None:
+    existing = db.query(Enrollment).filter(
+        Enrollment.user_id == user_id,
+        Enrollment.course_id == course_id
+    ).first()
+    if existing:
+        return
+    db.add(Enrollment(user_id=user_id, course_id=course_id))
+    db.commit()
+
 @router.post("/")
 def create_course(course: CourseCreate, current_user: User = Depends(require_teacher), db: Session = Depends(get_db)):
     existing = db.query(Course).filter(Course.code == course.code).first()
@@ -26,6 +36,8 @@ def create_course(course: CourseCreate, current_user: User = Depends(require_tea
     db.add(db_course)
     db.commit()
     db.refresh(db_course)
+    # So the new course appears in GET /api/courses/my without a separate join call.
+    _enroll(db, current_user.id, db_course.id)
     return db_course
 
 @router.get("/")
@@ -50,8 +62,12 @@ def join_course(course_code: str, current_user: User = Depends(get_current_user)
 
 @router.get("/my")
 def my_courses(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Students: courses they joined. Teachers: also courses they created,
+    # even if they were never enrolled (e.g. created earlier via the chatbot).
     enrollments = db.query(Enrollment).filter(Enrollment.user_id == current_user.id).all()
-    course_ids = [e.course_id for e in enrollments]
+    course_ids = {e.course_id for e in enrollments}
+    taught = db.query(Course.id).filter(Course.teacher_id == current_user.id).all()
+    course_ids.update(row[0] for row in taught)
     if not course_ids:
         return []
     return db.query(Course).filter(Course.id.in_(course_ids)).all()

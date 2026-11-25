@@ -20,7 +20,7 @@
   function asList(data) {
     if (Array.isArray(data)) return data;
     if (data && typeof data === 'object') {
-      const keys = ['items', 'data', 'results', 'courses', 'tasks', 'records', 'attendance', 'modules'];
+      const keys = ['items', 'data', 'results', 'courses', 'tasks', 'records', 'attendance', 'modules', 'events', 'messages', 'holidays'];
       for (let i = 0; i < keys.length; i++) {
         if (Array.isArray(data[keys[i]])) return data[keys[i]];
       }
@@ -45,6 +45,7 @@
       due: pick(raw, ['due_date', 'deadline', 'due']) || null,
       weighting: pick(raw, ['weighting', 'weight', 'weight_percent']),
       courseId: pick(raw, ['course_id', 'courseId']),
+      category: pick(raw, ['category', 'type', 'kind']) || '',
       completed: pick(raw, ['is_completed', 'completed']) === true
     };
   }
@@ -60,7 +61,8 @@
   function normalizeAttendance(raw) {
     return {
       date: String(pick(raw, ['date', 'checkin_date', 'created_at']) || ''),
-      status: String(pick(raw, ['status', 'state']) || '').toLowerCase()
+      status: String(pick(raw, ['status', 'state']) || '').toLowerCase(),
+      courseId: pick(raw, ['course_id', 'courseId'])
     };
   }
 

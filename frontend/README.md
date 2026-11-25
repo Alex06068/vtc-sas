@@ -12,6 +12,8 @@ Pages:
 | `course.html` | Single course: summary, modules, assignments |
 | `assignments.html` | Assignment list with search, course filter and status |
 | `attendance.html` | Attendance history plus today's check-in |
+| `calendar.html` | Month calendar: assignment dues, stored events, holidays |
+| `chat.html` | Moodle chatbot with stored conversation history |
 
 Plain HTML + CSS + JavaScript. No build step, no third-party runtime dependency.
 
@@ -60,6 +62,10 @@ cd frontend
 python -m http.server 5500
 ```
 
+The recommended path is to start uvicorn from `backend/` and open
+`http://127.0.0.1:8000/login.html` (FastAPI serves this `frontend/` folder).
+You can still use a separate static server on port 5500:
+
 Open `http://127.0.0.1:5500/login.html`.
 
 `js/config.js` resolves the API base automatically:
@@ -70,7 +76,8 @@ Open `http://127.0.0.1:5500/login.html`.
 
 ### 3. First run
 
-There are no seeded accounts, so register first:
+For a ready-made demo, run `python seed.py` from `backend/` and sign in as
+`teacher1` / `teacher1` or `student1` / `student1`. You can also register first:
 
 - username, email and password are required;
 - pick the role: **student** or **teacher**;

@@ -204,17 +204,48 @@
     return request('/api/attendance/my');
   }
 
-  /** Check in: POST /api/attendance/checkin { status } */
-  function checkin(status) {
+  /** Check in: POST /api/attendance/checkin { status, course_id? } */
+  function checkin(status, courseId) {
+    const body = { status: status || 'present' };
+    if (courseId !== undefined && courseId !== null && courseId !== '') {
+      body.course_id = Number(courseId);
+    }
     return request('/api/attendance/checkin', {
       method: 'POST',
-      body: { status: status || 'present' }
+      body: body
     });
   }
 
-  /** Chatbot hook (POST /api/chat/); not wired into the UI yet. */
-  function chat(message) {
-    return request('/api/chat/', { method: 'POST', body: { message: message } });
+  /** Chatbot (POST /api/chat/) — uses vtcsas_token. */
+  function chat(message, sessionId) {
+    const body = { message: message };
+    if (sessionId) body.session_id = sessionId;
+    return request('/api/chat/', { method: 'POST', body: body });
+  }
+
+  function getChatHistory(sessionId) {
+    const q = sessionId ? ('?session_id=' + encodeURIComponent(sessionId)) : '';
+    return request('/api/chat/history' + q);
+  }
+
+  function getCalendarEvents() {
+    return request('/api/calendar/events');
+  }
+
+  function getHolidays() {
+    return request('/api/calendar/holidays');
+  }
+
+  function createCalendarEvent(payload) {
+    return request('/api/calendar/events', { method: 'POST', body: payload });
+  }
+
+  function updateCalendarEvent(id, payload) {
+    return request('/api/calendar/events/' + encodeURIComponent(id), { method: 'PUT', body: payload });
+  }
+
+  function deleteCalendarEvent(id) {
+    return request('/api/calendar/events/' + encodeURIComponent(id), { method: 'DELETE' });
   }
 
   window.Api = {
@@ -234,6 +265,12 @@
     getTasks: getTasks,
     getAttendance: getAttendance,
     checkin: checkin,
-    chat: chat
+    chat: chat,
+    getChatHistory: getChatHistory,
+    getCalendarEvents: getCalendarEvents,
+    getHolidays: getHolidays,
+    createCalendarEvent: createCalendarEvent,
+    updateCalendarEvent: updateCalendarEvent,
+    deleteCalendarEvent: deleteCalendarEvent
   };
 })();

@@ -17,6 +17,7 @@ class TaskCreate(BaseModel):
     due_date: Optional[datetime] = None
     weighting: Optional[str] = None
     course_id: Optional[int] = None
+    category: Optional[str] = None
 
 class TaskResponse(BaseModel):
     id: int
@@ -24,6 +25,7 @@ class TaskResponse(BaseModel):
     due_date: Optional[datetime]
     weighting: Optional[str]
     course_id: Optional[int]
+    category: Optional[str] = None
     is_completed: bool
     source: Optional[str]
 

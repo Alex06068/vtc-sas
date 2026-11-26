@@ -85,7 +85,9 @@
     let payload;
 
     if (opts.body !== undefined && opts.body !== null) {
-      if (opts.form) {
+      if (typeof FormData !== 'undefined' && opts.body instanceof FormData) {
+        payload = opts.body;
+      } else if (opts.form) {
         headers['Content-Type'] = 'application/x-www-form-urlencoded';
         payload = new URLSearchParams(opts.body).toString();
       } else {
@@ -224,6 +226,75 @@
     });
   }
 
+  /** Upload one or more Office/PDF files into a week (teacher only). */
+  function uploadWeekFiles(courseId, moduleId, fileList) {
+    const body = new FormData();
+    const files = fileList ? Array.prototype.slice.call(fileList) : [];
+    files.forEach(function (file) { body.append('files', file); });
+    return request('/api/courses/' + encodeURIComponent(courseId) + '/modules/' + encodeURIComponent(moduleId) + '/files', {
+      method: 'POST',
+      body: body
+    });
+  }
+
+  /** Files in a course, with dates students may see (teachers also see pending ones). */
+  function getCourseFiles(courseId) {
+    return request('/api/courses/' + encodeURIComponent(courseId) + '/files');
+  }
+
+  function getExtractions(courseId, status) {
+    const q = status ? ('?status=' + encodeURIComponent(status)) : '';
+    return request('/api/courses/' + encodeURIComponent(courseId) + '/extractions' + q);
+  }
+
+  function confirmExtractions(courseId, items) {
+    return request('/api/courses/' + encodeURIComponent(courseId) + '/extractions/confirm', {
+      method: 'POST',
+      body: { items: items }
+    });
+  }
+
+  function deleteWeekFile(courseId, fileId) {
+    return request('/api/courses/' + encodeURIComponent(courseId) + '/files/' + encodeURIComponent(fileId), {
+      method: 'DELETE'
+    });
+  }
+
+  async function downloadWeekFile(courseId, fileId, filename) {
+    const token = getToken();
+    if (!token) {
+      redirectToLogin();
+      throw new ApiError('Your session has expired. Please sign in again.', 401, null);
+    }
+    let res;
+    try {
+      res = await fetch(API_BASE + '/api/courses/' + encodeURIComponent(courseId) + '/files/' + encodeURIComponent(fileId) + '/download', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+    } catch (err) {
+      throw new ApiError('Could not download that file. Make sure the API is running.', 0, null);
+    }
+    if (res.status === 401) {
+      clearSession();
+      redirectToLogin();
+      throw new ApiError('Your session has expired. Please sign in again.', 401, null);
+    }
+    if (!res.ok) {
+      let data = null;
+      try { data = await res.json(); } catch (e) { data = null; }
+      throw new ApiError(errorMessage(data) || ('Download failed (HTTP ' + res.status + ')'), res.status, data);
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || 'file';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(function () { window.URL.revokeObjectURL(url); }, 1000);
+  }
+
   /** My tasks: [{ id, title, due_date, weighting, course_id, is_completed }] */
   function getTasks() {
     return request('/api/tasks/');
@@ -297,6 +368,12 @@
     addModule: addModule,
     updateModule: updateModule,
     deleteModule: deleteModule,
+    uploadWeekFiles: uploadWeekFiles,
+    getCourseFiles: getCourseFiles,
+    getExtractions: getExtractions,
+    confirmExtractions: confirmExtractions,
+    deleteWeekFile: deleteWeekFile,
+    downloadWeekFile: downloadWeekFile,
     getTasks: getTasks,
     getAttendance: getAttendance,
     checkin: checkin,

@@ -52,6 +52,8 @@
           <div class="course-actions" id="teacher-actions" hidden>
             <button class="text-action" id="edit-course-btn" type="button">Edit course</button>
             <button class="text-action" id="add-week-btn" type="button">Add a week</button>
+            <button class="text-action" id="review-extract-btn" type="button" hidden>Review extracted dates</button>
+            <button class="text-action" id="student-view-btn" type="button">Student view</button>
           </div>
           <div class="progress-inline">
             <span>Progress</span>
@@ -69,6 +71,7 @@
 
           <p id="course-description" class="muted">No description has been added to this course yet.</p>
           <p class="muted" id="course-term" hidden></p>
+          <p class="callout" id="extract-banner" hidden></p>
 
           <h2 class="week-heading">Weeks</h2>
           <div id="modules-list" class="week-list"><p class="muted">Loading weeks&hellip;</p></div>
@@ -131,7 +134,7 @@
     <form id="week-form" novalidate>
       <div class="modal-head">
         <h2 id="week-dialog-title">Add a week</h2>
-        <p>Add a title, an optional week number or date, and materials as text or links. File uploads come later.</p>
+        <p>Add a title, an optional week number or date, and materials as text or links. After the week is saved, you can drop Word, Excel, PowerPoint or PDF files into it.</p>
       </div>
       <div class="modal-body">
         <div class="form-error" id="week-error" role="alert"></div>
@@ -166,7 +169,25 @@
     </form>
   </dialog>
 
+  <dialog id="confirm-dialog" class="modal modal-wide" aria-labelledby="confirm-dialog-title">
+    <form id="confirm-form" novalidate>
+      <div class="modal-head">
+        <h2 id="confirm-dialog-title">Confirm extracted dates</h2>
+        <p>Check the type, name and date. Students only see these as due items after you confirm. Dismiss anything that should not be published.</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-error" id="confirm-error" role="alert"></div>
+        <div id="confirm-list"></div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-secondary" data-close>Later</button>
+        <button type="submit" class="btn btn-primary" id="confirm-submit">Confirm items</button>
+      </div>
+    </form>
+  </dialog>
+
   <noscript>
+
     <p style="text-align:center;padding:16px;color:#b3261e">JavaScript is required to load this course.</p>
   </noscript>
 

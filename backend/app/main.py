@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from .routers import auth, tasks, chat, attendance, courses, calendar
+from .routers import auth, tasks, chat, attendance, courses, calendar, files
 from .db_setup import init_database
 from . import models  # noqa: F401
 import os
@@ -22,6 +22,7 @@ app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(attendance.router, prefix="/api/attendance", tags=["attendance"])
 app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
+app.include_router(files.router, prefix="/api/courses", tags=["files"])
 app.include_router(calendar.router, prefix="/api/calendar", tags=["calendar"])
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))

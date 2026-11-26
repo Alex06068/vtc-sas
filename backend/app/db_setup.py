@@ -33,6 +33,7 @@ def ensure_new_columns():
     _sqlite_add_column("modules", "start_date", "start_date DATE")
     _sqlite_add_column("modules", "content", "content TEXT")
     _sqlite_add_column("modules", "links", "links TEXT")
+    _sqlite_add_column("tasks", "location", "location VARCHAR")
 
 
 def seed_school_networks_from_env():

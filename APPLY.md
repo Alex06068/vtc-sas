@@ -1,7 +1,8 @@
 # How to run this VTC-SAS update
 
-This working tree simplifies the Moodle-style front end and lets teachers
-create and edit real courses, then add weeks on the same course page.
+This working tree simplifies the Moodle-style front end, lets teachers
+create and edit real courses by week, and lets them upload Office/PDF files
+into a week so assignment and exam dates can be extracted and confirmed.
 
 It sits on top of the earlier demo-database / calendar / chatbot / school-IP
 attendance work, which is already on `main`. This branch has a **local commit
@@ -26,13 +27,27 @@ are ready.
 - Teachers can create a course (code, name, description, optional term dates)
   and are taken straight to the course page. They can edit those fields later,
   and add or edit weeks (title, week number or date, materials as text and
-  links). File uploads are not in this pass. The existing `modules` table is
-  reused; new columns are added on startup.
+  links). The existing `modules` table is reused; new columns are added on
+  startup.
+- Teachers can drop or browse a batch of Word (.docx), Excel (.xlsx),
+  PowerPoint (.pptx) or PDF files into a week. The server reads the files,
+  classifies them (notes / assignment brief / exam schedule), and extracts
+  assignment names, due dates, and exam times or places where it can.
+  Teachers get a short confirm list they can edit. Unconfirmed dates are
+  not shown to students as due items. After confirmation, the items appear
+  in "Due this week" and on the calendar. On the week card, everyone sees
+  the file type and any dates they are allowed to see before opening the
+  file. Teachers also have a compact Student view (what students will see;
+  unconfirmed dates are hidden). Uploaded files are stored under
+  `backend/uploads/weeks/` (gitignored). Extraction rows live in
+  `week_files` and `file_extractions`.
 - Assignment and attendance tables are tighter; existing status tags remain.
 - CSV/Excel course import is **not** included (planned for Interim, 12 Jan 2027).
-- Student "mark week complete", progress from those checks, a teacher
-  "student view" toggle, and per-student due-date extensions are **not** in
-  this pass (Interim).
+- Student "mark week complete", progress from those checks, and per-student
+  due-date extensions are **not** in this pass (Interim).
+- Full-text search of file contents, chatbot answers that cite the source
+  file, and copying a previous-term course with shifted dates are **not**
+  in this pass.
 
 Demo seed data (`teacher1` / `student1` and their two demo courses) is
 unchanged except that existing week titles now also store a week number.
@@ -68,6 +83,19 @@ Then open:
 `/` and `/index.html` are the course home. `/css` and `/js` are served from
 `frontend/`.
 
+## Try week file uploads
+
+Sign in as `teacher1`, open a course, and add a week if needed. On the week
+card, drop (or browse) one or more `.docx`, `.xlsx`, `.pptx` or `.pdf` files.
+If the files mention a due date or exam, a confirm list opens. Edit the name,
+date or place if needed, then confirm. Those items then show up for
+`student1` under "Due this week" and on the Calendar page. Use **Student
+view** on the course page to preview what students will see (unconfirmed
+dates stay hidden).
+
+Older `.doc` / `.xls` / `.ppt` files are not accepted; save them in the
+newer Office format first. Do not commit files under `backend/uploads/`.
+
 ## Seed the database
 
 ```bash
@@ -81,9 +109,10 @@ should see data in:
 - `users`, `courses`, `enrollments`, `modules`, `tasks`, `attendance`
 - `calendar_events`, `chat_messages`, `holidays`, `school_networks`
 
-New optional columns on existing databases are added at startup:
-`courses.start_date`, `courses.end_date`, and on `modules`: `week_number`,
-`start_date`, `content`, `links`.
+New optional columns and tables on existing databases are added at startup:
+`courses.start_date`, `courses.end_date`, `tasks.location`, and on `modules`:
+`week_number`, `start_date`, `content`, `links`, plus the `week_files` and
+`file_extractions` tables.
 
 ## Demo accounts
 

@@ -54,6 +54,7 @@ class Task(Base):
     category = Column(String, nullable=True)  # assignment / exam / project
     is_completed = Column(Boolean, default=False)
     source = Column(String)
+    location = Column(String, nullable=True)  # exam venue or submission place
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Attendance(Base):
@@ -110,4 +111,37 @@ class ChatMessage(Base):
     session_id = Column(String, default="default", nullable=False, index=True)
     role = Column(String, nullable=False)  # user / assistant
     content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class WeekFile(Base):
+    """A file uploaded into a course week. Stored on disk, metadata in the DB."""
+    __tablename__ = "week_files"
+    id = Column(Integer, primary_key=True, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False, index=True)
+    module_id = Column(Integer, ForeignKey("modules.id"), nullable=False, index=True)
+    uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    original_name = Column(String, nullable=False)
+    stored_name = Column(String, nullable=False, unique=True)
+    extension = Column(String, nullable=False)
+    size_bytes = Column(Integer, nullable=True)
+    classified_type = Column(String, default="notes")  # notes / assignment_brief / exam_schedule
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class FileExtraction(Base):
+    """A date or item pulled from a week file. Hidden from students until confirmed."""
+    __tablename__ = "file_extractions"
+    id = Column(Integer, primary_key=True, index=True)
+    file_id = Column(Integer, ForeignKey("week_files.id"), nullable=False, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False, index=True)
+    module_id = Column(Integer, ForeignKey("modules.id"), nullable=False, index=True)
+    kind = Column(String, nullable=False, default="assignment")  # assignment / exam
+    title = Column(String, nullable=False)
+    due_at = Column(DateTime(timezone=True), nullable=True)
+    location = Column(String, nullable=True)
+    snippet = Column(Text, nullable=True)
+    status = Column(String, default="pending", nullable=False, index=True)  # pending / confirmed / dismissed
+    published_task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
+    confirmed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    confirmed_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -28,6 +28,7 @@ class TaskResponse(BaseModel):
     category: Optional[str] = None
     is_completed: bool
     source: Optional[str]
+    location: Optional[str] = None
 
     class Config:
         from_attributes = True

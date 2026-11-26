@@ -48,7 +48,9 @@
       weighting: pick(raw, ['weighting', 'weight', 'weight_percent']),
       courseId: pick(raw, ['course_id', 'courseId']),
       category: pick(raw, ['category', 'type', 'kind']) || '',
-      completed: pick(raw, ['is_completed', 'completed']) === true
+      completed: pick(raw, ['is_completed', 'completed']) === true,
+      location: String(pick(raw, ['location', 'venue', 'place']) || ''),
+      source: String(pick(raw, ['source']) || '')
     };
   }
 

@@ -7,7 +7,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Course, Enrollment, Module, User
+from ..storage import delete_module_files
+from ..models import Course, Enrollment, FileExtraction, Module, User, WeekFile
 from .auth import get_current_user, require_teacher
 
 router = APIRouter()
@@ -341,6 +342,12 @@ def delete_module(course_id: int, module_id: int, current_user: User = Depends(r
     module = db.query(Module).filter(Module.id == module_id, Module.course_id == course_id).first()
     if not module:
         raise HTTPException(status_code=404, detail="Week not found")
+    file_rows = db.query(WeekFile).filter(WeekFile.course_id == course_id, WeekFile.module_id == module_id).all()
+    file_ids = [row.id for row in file_rows]
+    if file_ids:
+        db.query(FileExtraction).filter(FileExtraction.file_id.in_(file_ids)).delete(synchronize_session=False)
+        db.query(WeekFile).filter(WeekFile.id.in_(file_ids)).delete(synchronize_session=False)
+    delete_module_files(course_id, module_id)
     db.delete(module)
     db.commit()
     return {"message": "Week deleted"}

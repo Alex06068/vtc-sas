@@ -120,7 +120,7 @@
           (code ? '<span class="due-course">' + code + '</span>' : '') +
           '</span>' +
           '<span class="due-when' + (phrase.kind === 'overdue' || phrase.kind === 'soon' ? ' is-' + phrase.kind : '') + '">' +
-            UI.escapeHtml(phrase.text) +
+            UI.escapeHtml(phrase.text + (task.location ? ' · ' + task.location : '')) +
           '</span>' +
         '</li>'
       );

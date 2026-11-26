@@ -1,11 +1,42 @@
 # How to run this VTC-SAS update
 
-This working tree adds a complete demo database, a Moodle-style chatbot with
-stored conversation history, a teacher-edit / student-view calendar, school-IP
-attendance gating, and serves the Moodle `frontend/` from FastAPI.
+This working tree simplifies the Moodle-style front end and lets teachers
+create and edit real courses, then add weeks on the same course page.
 
-It has a **local commit only**. It was **not pushed**. Commit and push from
-your own machine when you are ready.
+It sits on top of the earlier demo-database / calendar / chatbot / school-IP
+attendance work, which is already on `main`. This branch has a **local commit
+only**. It was **not pushed**. Commit and push from your own machine when you
+are ready.
+
+## What is new
+
+- The gold icon rail is gone. Every page uses one thin white top bar and text
+  links. The page background is `--surface-alt` (`#fbfaf8`); cards stay white.
+  Gold is only a small accent (brand badge, primary buttons, the Course tab).
+- Home still lists your courses (no new dashboard). A "Due this week" list
+  (next 3–5 assignments, phrased like "Due in 2 days") sits above the course
+  cards. Each card shows the course name, code, the next piece of work, and a
+  thin progress bar (based on completed assignments for now).
+- Empty states are one sentence plus a button that opens the existing
+  create/join dialog, or asks the teacher to add week 1.
+- The course page keeps breadcrumbs and only the Course tab. Unfinished tabs
+  (Participants, Grades, Activities, Competencies, More) are hidden, and the
+  sidebar icon grid / second navigation is gone. Teachers and students share
+  the same layout; teachers get text actions: Edit course and Add a week.
+- Teachers can create a course (code, name, description, optional term dates)
+  and are taken straight to the course page. They can edit those fields later,
+  and add or edit weeks (title, week number or date, materials as text and
+  links). File uploads are not in this pass. The existing `modules` table is
+  reused; new columns are added on startup.
+- Assignment and attendance tables are tighter; existing status tags remain.
+- CSV/Excel course import is **not** included (planned for Interim, 12 Jan 2027).
+- Student "mark week complete", progress from those checks, a teacher
+  "student view" toggle, and per-student due-date extensions are **not** in
+  this pass (Interim).
+
+Demo seed data (`teacher1` / `student1` and their two demo courses) is
+unchanged except that existing week titles now also store a week number.
+No fake real-world course catalogue was added.
 
 ## Run the server
 
@@ -16,28 +47,26 @@ resolve correctly:
 cd backend
 python -m venv venv
 
-# Windows:
-venv\Scripts\activate
+# Windows (if script policy blocks Activate.ps1, use activate.bat):
+venv\Scripts\activate.bat
 
 # macOS / Linux:
 source venv/bin/activate
 
 pip install -r requirements.txt
 python seed.py
-py -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-On Windows, `py -m uvicorn ...` is the usual command. On macOS/Linux,
-`python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000` is the same.
+On Windows, `py -m uvicorn ...` also works if `python` is not on PATH.
 
 Then open:
 
-- http://127.0.0.1:8000/login.html — Moodle sign-in (not the old `/courses.html`)
+- http://127.0.0.1:8000/login.html — sign-in (do not use `http://0.0.0.0:8000`)
 - http://127.0.0.1:8000/docs — API docs
 
-`/` and `/index.html` are the Moodle dashboard. `/css` and `/js` are served
-from `frontend/`. The older pages under `backend/static/` remain as a fallback
-for `/chat.html` only if `frontend/chat.html` is missing (it is present now).
+`/` and `/index.html` are the course home. `/css` and `/js` are served from
+`frontend/`.
 
 ## Seed the database
 
@@ -46,12 +75,15 @@ cd backend
 python seed.py
 ```
 
-The script is idempotent: running it again fills in missing demo rows and
-leaves existing ones alone. After seeding, open `backend/vtcsas.db` in DB
-Browser for SQLite (or `sqlite3 vtcsas.db`) and you should see data in:
+The script is idempotent. After seeding, open `backend/vtcsas.db` and you
+should see data in:
 
 - `users`, `courses`, `enrollments`, `modules`, `tasks`, `attendance`
 - `calendar_events`, `chat_messages`, `holidays`, `school_networks`
+
+New optional columns on existing databases are added at startup:
+`courses.start_date`, `courses.end_date`, and on `modules`: `week_number`,
+`start_date`, `content`, `links`.
 
 ## Demo accounts
 
@@ -62,9 +94,10 @@ These passwords are obvious and for local demonstration only:
 | teacher1  | teacher1  | teacher |
 | student1  | student1  | student |
 
-Teacher: can create courses, add calendar events, and manage school networks.
-Student: can view the calendar, chat, join courses, and check in — but only
-from a school IP once `school_networks` has an enabled row.
+Teacher: can create and edit their courses, add weeks, add calendar events,
+and manage school networks. Student: can view courses and the calendar, chat,
+join courses, and check in — but only from a school IP once `school_networks`
+has an enabled row.
 
 ## Chatbot key
 
@@ -79,29 +112,20 @@ The seed inserts `172.30.82.0/23` (school LAN) as an enabled row. That
 HTTP 403 (`Attendance can only be marked from a school computer.`).
 Teachers are not gated.
 
-To try student check-in on a home/Codespaces machine, sign in as `teacher1`
-and disable that row:
+To try student check-in off the school LAN, sign in as `teacher1` and
+disable that row:
 
 ```bash
 # After logging in as teacher1, paste the token:
-curl -X PATCH http://127.0.0.1:8000/api/attendance/school-networks/1   -H "Authorization: Bearer TOKEN" -H "Content-Type: application/json"   -d "{"enabled": false}"
+curl -X PATCH http://127.0.0.1:8000/api/attendance/school-networks/1 \
+  -H "Authorization: Bearer TOKEN" -H "Content-Type: application/json" \
+  -d '{"enabled": false}'
 ```
-
-An empty `school_networks` table (and empty `SCHOOL_NETWORKS` env) turns the
-check off again. Optional env flags are documented in `backend/.env.example`
-(`SCHOOL_NETWORKS`, `TRUST_PROXY_HEADERS`, default false).
-
-## Calendar permissions
-
-- Any signed-in user can `GET /api/calendar/events` and `/api/calendar/holidays`.
-- Only teachers can `POST` / `PUT` / `DELETE` events (students get 403).
-- The Calendar page hides the editor for students. Assignment due dates and
-  stored events both appear on the month grid.
 
 ## Commit and push yourself
 
-This branch was created locally from `main` and was not pushed. From the
-repository root on your machine:
+This branch was created locally from updated `main` and was not pushed.
+From the repository root on your machine:
 
 ```bash
 git status
@@ -116,12 +140,12 @@ https://github.com/Alex06068/vtc-sas :
 ```bash
 git checkout main
 git pull
-# copy this working tree over that clone, or add this remote and merge the branch
-git checkout -b feat/demo-complete-db-calendar-chat
+git checkout -b feat/simplify-ui-course-weeks
+# copy this working tree over that clone, then:
 git add -A
 git status
 # confirm backend/.env is NOT staged (it is gitignored)
-git commit -m "feat: complete demo DB, Moodle chatbot, teacher calendar, and school IP attendance"
+git commit -m "feat: simplify Moodle UI and add teacher course week editing"
 git push -u origin HEAD
 ```
 

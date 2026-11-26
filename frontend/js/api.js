@@ -184,14 +184,44 @@
     return request('/api/courses/join/' + encodeURIComponent(courseCode), { method: 'POST' });
   }
 
-  /** Create a course (teacher only): { code, name, description? } */
+  /** Create a course (teacher only): { code, name, description?, start_date?, end_date? } */
   function createCourse(payload) {
     return request('/api/courses/', { method: 'POST', body: payload });
   }
 
-  /** Modules of one course: [{ id, course_id, title, order }] */
+  /** One course the user can access: { id, code, name, description, teacher_id, start_date, end_date } */
+  function getCourse(courseId) {
+    return request('/api/courses/' + encodeURIComponent(courseId));
+  }
+
+  /** Update a course (course teacher only). */
+  function updateCourse(courseId, payload) {
+    return request('/api/courses/' + encodeURIComponent(courseId), { method: 'PUT', body: payload });
+  }
+
+  /** Weeks/topics of one course: [{ id, course_id, title, week_number, start_date, content, links, order }] */
   function getModules(courseId) {
     return request('/api/courses/' + encodeURIComponent(courseId) + '/modules');
+  }
+
+  /** Add a week or topic (course teacher only). */
+  function addModule(courseId, payload) {
+    return request('/api/courses/' + encodeURIComponent(courseId) + '/modules', { method: 'POST', body: payload });
+  }
+
+  /** Update a week or topic (course teacher only). */
+  function updateModule(courseId, moduleId, payload) {
+    return request('/api/courses/' + encodeURIComponent(courseId) + '/modules/' + encodeURIComponent(moduleId), {
+      method: 'PUT',
+      body: payload
+    });
+  }
+
+  /** Delete a week or topic (course teacher only). */
+  function deleteModule(courseId, moduleId) {
+    return request('/api/courses/' + encodeURIComponent(courseId) + '/modules/' + encodeURIComponent(moduleId), {
+      method: 'DELETE'
+    });
   }
 
   /** My tasks: [{ id, title, due_date, weighting, course_id, is_completed }] */
@@ -259,9 +289,14 @@
     register: register,
     me: me,
     getCourses: getCourses,
+    getCourse: getCourse,
     joinCourse: joinCourse,
     createCourse: createCourse,
+    updateCourse: updateCourse,
     getModules: getModules,
+    addModule: addModule,
+    updateModule: updateModule,
+    deleteModule: deleteModule,
     getTasks: getTasks,
     getAttendance: getAttendance,
     checkin: checkin,

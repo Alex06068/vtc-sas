@@ -48,7 +48,7 @@
    * @param {string} message
    * @param {Function} [onRetry]
    */
-  function setState(el, state, message, onRetry) {
+  function setState(el, state, message, onRetry, actions) {
     if (!el) return;
     if (!state) {
       el.classList.remove('show');
@@ -79,6 +79,21 @@
       btn.textContent = 'Try again';
       btn.addEventListener('click', onRetry);
       el.appendChild(btn);
+    }
+
+    const extra = Array.isArray(actions) ? actions : (Array.isArray(onRetry) ? onRetry : null);
+    if (extra) {
+      extra.forEach(function (action) {
+        if (!action || !action.label) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = action.className || 'btn btn-primary btn-sm';
+        btn.textContent = action.label;
+        if (typeof action.onClick === 'function') {
+          btn.addEventListener('click', action.onClick);
+        }
+        el.appendChild(btn);
+      });
     }
   }
 
@@ -126,7 +141,7 @@
       if (me && me.username) {
         if (usernameEl) usernameEl.textContent = me.username;
         if (roleEl) roleEl.textContent = roleLabel(me.role);
-        window.Api.setUser({ username: me.username, role: me.role });
+        window.Api.setUser({ id: me.id, username: me.username, role: me.role });
         return me;
       }
     } catch (err) {
@@ -202,6 +217,34 @@
   function show(el) { if (el) el.hidden = false; }
   function hide(el) { if (el) el.hidden = true; }
 
+  function openDialog(dialog) {
+    if (!dialog) return;
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute('open', '');
+    }
+  }
+
+  function closeDialog(dialog) {
+    if (!dialog) return;
+    if (typeof dialog.close === 'function' && dialog.open) {
+      dialog.close();
+    } else {
+      dialog.removeAttribute('open');
+    }
+  }
+
+  function bindDialog(dialog) {
+    if (!dialog) return;
+    dialog.querySelectorAll('[data-close]').forEach(function (btn) {
+      btn.addEventListener('click', function () { closeDialog(dialog); });
+    });
+    dialog.addEventListener('click', function (event) {
+      if (event.target === dialog) closeDialog(dialog);
+    });
+  }
+
   window.VtcUI = {
     qs: qs,
     qsa: qsa,
@@ -215,6 +258,9 @@
     initSections: initSections,
     initTabs: initTabs,
     show: show,
-    hide: hide
+    hide: hide,
+    openDialog: openDialog,
+    closeDialog: closeDialog,
+    bindDialog: bindDialog
   };
 })();

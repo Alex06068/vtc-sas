@@ -18,6 +18,8 @@ class Course(Base):
     name = Column(String, nullable=False)
     description = Column(Text)
     teacher_id = Column(Integer, ForeignKey("users.id"))
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Enrollment(Base):
@@ -29,11 +31,16 @@ class Enrollment(Base):
     __table_args__ = (UniqueConstraint('user_id', 'course_id', name='uq_enrollment'),)
 
 class Module(Base):
+    """A week or topic on a course page. Reuses the existing modules table."""
     __tablename__ = "modules"
     id = Column(Integer, primary_key=True, index=True)
     course_id = Column(Integer, ForeignKey("courses.id"))
     title = Column(String, nullable=False)
     order = Column(Integer, default=0)
+    week_number = Column(Integer, nullable=True)
+    start_date = Column(Date, nullable=True)
+    content = Column(Text, nullable=True)  # free-text materials
+    links = Column(Text, nullable=True)  # JSON list of {title, url}
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Task(Base):

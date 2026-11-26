@@ -20,7 +20,7 @@
   function asList(data) {
     if (Array.isArray(data)) return data;
     if (data && typeof data === 'object') {
-      const keys = ['items', 'data', 'results', 'courses', 'tasks', 'records', 'attendance', 'modules', 'events', 'messages', 'holidays'];
+      const keys = ['items', 'data', 'results', 'courses', 'tasks', 'records', 'attendance', 'modules', 'weeks', 'events', 'messages', 'holidays'];
       for (let i = 0; i < keys.length; i++) {
         if (Array.isArray(data[keys[i]])) return data[keys[i]];
       }
@@ -34,7 +34,9 @@
       code: String(pick(raw, ['code']) || ''),
       name: String(pick(raw, ['name', 'title']) || 'Untitled course'),
       description: String(pick(raw, ['description', 'summary']) || ''),
-      teacherId: pick(raw, ['teacher_id'])
+      teacherId: pick(raw, ['teacher_id']),
+      startDate: pick(raw, ['start_date', 'startDate']) || null,
+      endDate: pick(raw, ['end_date', 'endDate']) || null
     };
   }
 
@@ -51,10 +53,24 @@
   }
 
   function normalizeModule(raw) {
+    const linksRaw = pick(raw, ['links']) || [];
+    const links = Array.isArray(linksRaw)
+      ? linksRaw.map(function (item) {
+          if (!item) return null;
+          if (typeof item === 'string') return { title: item, url: item };
+          const url = String(item.url || '').trim();
+          if (!url) return null;
+          return { title: String(item.title || url), url: url };
+        }).filter(Boolean)
+      : [];
     return {
       id: pick(raw, ['id', 'module_id']),
-      title: String(pick(raw, ['title', 'name']) || 'Untitled module'),
-      order: Number(pick(raw, ['order', 'position']) || 0)
+      title: String(pick(raw, ['title', 'name']) || 'Untitled week'),
+      order: Number(pick(raw, ['order', 'position']) || 0),
+      weekNumber: pick(raw, ['week_number', 'weekNumber']) ?? null,
+      startDate: pick(raw, ['start_date', 'startDate']) || null,
+      content: String(pick(raw, ['content', 'body', 'materials']) || ''),
+      links: links
     };
   }
 
@@ -113,6 +129,36 @@
     return raw;
   }
 
+  /**
+   * Relative due phrase, e.g. "Due in 2 days", "Due tomorrow", "1 day overdue".
+   * @returns {{ text: string, kind: 'ok'|'soon'|'overdue'|'none' }}
+   */
+  function duePhrase(value) {
+    if (value === undefined || value === null || value === '') {
+      return { text: 'No due date', kind: 'none' };
+    }
+    const due = new Date(value);
+    if (Number.isNaN(due.getTime())) return { text: 'No due date', kind: 'none' };
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfDue = new Date(due);
+    startOfDue.setHours(0, 0, 0, 0);
+    const days = Math.round((startOfDue.getTime() - startOfToday.getTime()) / 86400000);
+
+    if (days < 0) {
+      const overdue = Math.abs(days);
+      return {
+        text: overdue === 1 ? '1 day overdue' : overdue + ' days overdue',
+        kind: 'overdue'
+      };
+    }
+    if (days === 0) return { text: 'Due today', kind: 'soon' };
+    if (days === 1) return { text: 'Due tomorrow', kind: 'soon' };
+    if (days <= 7) return { text: 'Due in ' + days + ' days', kind: 'soon' };
+    return { text: 'Due in ' + days + ' days', kind: 'ok' };
+  }
+
   /** Assignment status badge: { cls, label } */
   function taskStatus(task) {
     if (task.completed) return { cls: 'badge-success', label: 'Completed' };
@@ -151,6 +197,7 @@
     formatDate: formatDate,
     formatDateTime: formatDateTime,
     weightText: weightText,
+    duePhrase: duePhrase,
     taskStatus: taskStatus,
     attendanceStatus: attendanceStatus
   };

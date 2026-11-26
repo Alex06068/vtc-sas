@@ -10,31 +10,8 @@
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-  <aside class="rail" aria-label="Main menu">
-    <a class="rail-btn" href="index.html" title="Dashboard" aria-label="Dashboard">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
-    </a>
-    <a class="rail-btn is-active" href="index.html" title="My courses" aria-label="My courses">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v2H4zm0 6h16v2H4zm0 6h10v2H4z"/></svg>
-    </a>
-    <a class="rail-btn" href="assignments.html" title="Assignments" aria-label="Assignments">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6zm8 1v6h6"/></svg>
-    </a>
-    <a class="rail-btn" href="attendance.html" title="Attendance" aria-label="Attendance">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3V2h-2v2H9V2zm13 8v11H4V10z"/></svg>
-    </a>
-    <a class="rail-btn" href="calendar.html" title="Calendar" aria-label="Calendar">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v2H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H10V2zM6 9h12v9H6z"/></svg>
-    </a>
-    <a class="rail-btn" href="chat.html" title="Chatbot" aria-label="Chatbot">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4V5z"/></svg>
-    </a>
-    <button class="rail-btn rail-bottom" type="button" title="Collapse menu" aria-label="Collapse menu">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6z"/></svg>
-    </button>
-  </aside>
 
-  <div class="app">
+<div class="app">
     <header class="site-navbar">
       <div class="navbar-inner">
         <a class="brand" href="index.html" aria-label="VTC-SAS home">
@@ -45,12 +22,11 @@
           </span>
         </a>
         <nav class="main-nav" aria-label="Primary navigation">
-                    <a href="index.html" class="active" aria-current="page">My Courses</a>
+          <a href="index.html" class="active" aria-current="page">My Courses</a>
           <a href="assignments.html">Assignments</a>
           <a href="attendance.html">Attendance</a>
           <a href="calendar.html">Calendar</a>
           <a href="chat.html">Chatbot</a>
-
         </nav>
         <div class="navbar-actions">
           <span class="user-chip" id="nav-user">
@@ -64,7 +40,7 @@
 
     <main class="page">
       <div class="container">
-        <nav class="crumbs" aria-label="Breadcrumb" style="font-size:13px;color:#6c757d;margin-bottom:10px;">
+        <nav class="crumbs" aria-label="Breadcrumb">
           <a href="index.html">My Courses</a>
           <span aria-hidden="true"> / </span>
           <span id="crumb-course">Course</span>
@@ -73,109 +49,122 @@
         <header class="course-hero">
           <h1 id="course-title">Loading&hellip;</h1>
           <p class="meta" id="course-meta"></p>
+          <div class="course-actions" id="teacher-actions" hidden>
+            <button class="text-action" id="edit-course-btn" type="button">Edit course</button>
+            <button class="text-action" id="add-week-btn" type="button">Add a week</button>
+          </div>
+          <div class="progress-inline">
+            <span>Progress</span>
+            <div class="progress-track is-thin"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+            <strong id="progress-value">0%</strong>
+          </div>
         </header>
 
-        <nav class="tabs" role="tablist">
-          <button class="tab is-active" role="tab" aria-selected="true">Course</button>
-          <button class="tab" role="tab" aria-selected="false">Participants</button>
-          <button class="tab" role="tab" aria-selected="false">Grades</button>
-          <button class="tab" role="tab" aria-selected="false">Activities</button>
-          <button class="tab" role="tab" aria-selected="false">Competencies</button>
-          <button class="tab" role="tab" aria-selected="false">More</button>
+        <nav class="tabs" aria-label="Course sections">
+          <button class="tab is-active" type="button" aria-current="page">Course</button>
         </nav>
 
-        <div class="columns">
-          <section class="content" id="course-content">
-            <div id="course-status" class="state-box" role="status"></div>
+        <section class="content" id="course-content">
+          <div id="course-status" class="state-box" role="status"></div>
 
-            <article class="section" data-open="true">
-              <header class="section-head" role="button" tabindex="0" aria-expanded="true">
-                <span class="chev" aria-hidden="true"></span>
-                <h2>General</h2>
-              </header>
-              <div class="section-body">
-                <p id="course-description" class="muted">No description has been added to this course yet.</p>
-                <table class="kv">
-                  <tr><th>Course code</th><td id="course-code">&mdash;</td></tr>
-                  <tr><th>Modules</th><td id="course-module-count">&mdash;</td></tr>
-                  <tr><th>Assignments</th><td id="course-task-count">&mdash;</td></tr>
-                </table>
-              </div>
-            </article>
+          <p id="course-description" class="muted">No description has been added to this course yet.</p>
+          <p class="muted" id="course-term" hidden></p>
 
-            <article class="section" data-open="true">
-              <header class="section-head" role="button" tabindex="0" aria-expanded="true">
-                <span class="chev" aria-hidden="true"></span>
-                <h2>Course modules</h2>
-              </header>
-              <div class="section-body">
-                <div id="modules-list"><p class="muted">Loading modules&hellip;</p></div>
-              </div>
-            </article>
+          <h2 class="week-heading">Weeks</h2>
+          <div id="modules-list" class="week-list"><p class="muted">Loading weeks&hellip;</p></div>
+          <div id="weeks-empty" class="state-box" role="status"></div>
 
-            <article class="section" data-open="true">
-              <header class="section-head" role="button" tabindex="0" aria-expanded="true">
-                <span class="chev" aria-hidden="true"></span>
-                <h2>Assignments in this course</h2>
-              </header>
-              <div class="section-body">
-                <div id="tasks-list"><p class="muted">Loading assignments&hellip;</p></div>
-                <p><a href="assignments.html" id="all-assignments-link">View all assignments &rarr;</a></p>
-              </div>
-            </article>
-          </section>
-
-          <aside class="sidebar">
-            <div class="block">
-              <div class="progress-head"><span>Your progress</span><strong id="progress-value">0%</strong></div>
-              <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-            </div>
-
-            <div class="block quick-icons">
-              <a href="assignments.html" title="Assignments">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6zm8 1v6h6"/></svg>
-                <span>Assignments</span>
-              </a>
-              <a href="attendance.html" title="Attendance">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3V2h-2v2H9V2zm13 8v11H4V10z"/></svg>
-                <span>Attendance</span>
-              </a>
-              <a href="index.html" title="Courses">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v2H4zm0 6h16v2H4zm0 6h10v2H4z"/></svg>
-                <span>Courses</span>
-              </a>
-              <a href="#" id="refresh-link" title="Refresh">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
-                <span>Refresh</span>
-              </a>
-            </div>
-
-            <button class="btn btn-primary wide" id="expand-all" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v2H4zm0 6h16v2H4zm0 6h10v2H4z"/></svg>
-              Course content
-            </button>
-
-            <div class="block">
-              <h4>Navigation</h4>
-              <ul class="navlist">
-                <li><a class="is-current" href="#course-content">Course</a></li>
-                <li><a href="assignments.html">Assignments</a></li>
-                <li><a href="attendance.html">Attendance</a></li>
-                <li><a href="index.html">My courses</a></li>
-              </ul>
-            </div>
-          </aside>
-        </div>
+          <h2 class="week-heading">Assignments</h2>
+          <div id="tasks-list"><p class="muted">Loading assignments&hellip;</p></div>
+          <p><a href="assignments.html" id="all-assignments-link">View all assignments &rarr;</a></p>
+        </section>
       </div>
     </main>
 
     <footer class="site-footer">
       <div class="container">
-        <span>VTC-SAS &middot; Moodle-style academic front end</span>
+        <span>VTC-SAS</span>
         <span>Data served by the FastAPI backend</span>
       </div>
     </footer>
   </div>
+
+  <dialog id="edit-course-dialog" class="modal" aria-labelledby="edit-course-title">
+    <form id="edit-course-form" novalidate>
+      <div class="modal-head">
+        <h2 id="edit-course-title">Edit course</h2>
+        <p>Changes apply to everyone in this course.</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-error" id="edit-course-error" role="alert"></div>
+        <div class="field">
+          <label for="edit-code">Course code</label>
+          <input id="edit-code" name="code" type="text" required>
+        </div>
+        <div class="field">
+          <label for="edit-name">Course name</label>
+          <input id="edit-name" name="name" type="text" required>
+        </div>
+        <div class="field">
+          <label for="edit-desc">Description <span class="cell-muted">(optional)</span></label>
+          <textarea id="edit-desc" name="description"></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="edit-start">Term start <span class="cell-muted">(optional)</span></label>
+            <input id="edit-start" name="start_date" type="date">
+          </div>
+          <div class="field">
+            <label for="edit-end">Term end <span class="cell-muted">(optional)</span></label>
+            <input id="edit-end" name="end_date" type="date">
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-secondary" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" id="edit-course-submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="week-dialog" class="modal modal-wide" aria-labelledby="week-dialog-title">
+    <form id="week-form" novalidate>
+      <div class="modal-head">
+        <h2 id="week-dialog-title">Add a week</h2>
+        <p>Add a title, an optional week number or date, and materials as text or links. File uploads come later.</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-error" id="week-error" role="alert"></div>
+        <input type="hidden" id="week-id" name="id">
+        <div class="field">
+          <label for="week-title">Title</label>
+          <input id="week-title" name="title" type="text" placeholder="e.g. Cloud concepts" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="week-number">Week number <span class="cell-muted">(optional)</span></label>
+            <input id="week-number" name="week_number" type="number" min="1" step="1" placeholder="e.g. 1">
+          </div>
+          <div class="field">
+            <label for="week-date">Date <span class="cell-muted">(optional)</span></label>
+            <input id="week-date" name="start_date" type="date">
+          </div>
+        </div>
+        <div class="field">
+          <label for="week-content">Materials <span class="cell-muted">(optional)</span></label>
+          <textarea id="week-content" name="content" placeholder="Notes or reading for this week"></textarea>
+        </div>
+        <div class="field">
+          <label for="week-links">Links <span class="cell-muted">(optional, one per line)</span></label>
+          <textarea id="week-links" name="links" placeholder="https://example.com&#10;Reading list | https://example.com/reading"></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-secondary" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" id="week-submit">Save week</button>
+      </div>
+    </form>
+  </dialog>
 
   <noscript>
     <p style="text-align:center;padding:16px;color:#b3261e">JavaScript is required to load this course.</p>

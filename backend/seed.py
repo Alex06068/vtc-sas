@@ -107,11 +107,15 @@ def ensure_enrollment(db, user: User, course: Course) -> None:
     db.commit()
 
 
-def ensure_module(db, course: Course, title: str, order: int) -> None:
+def ensure_module(db, course: Course, title: str, order: int, week_number=None) -> None:
     existing = db.query(Module).filter(Module.course_id == course.id, Module.title == title).first()
+    number = week_number if week_number is not None else order
     if existing:
+        if existing.week_number is None and number is not None:
+            existing.week_number = number
+            db.commit()
         return
-    db.add(Module(course_id=course.id, title=title, order=order))
+    db.add(Module(course_id=course.id, title=title, order=order, week_number=number))
     db.commit()
 
 

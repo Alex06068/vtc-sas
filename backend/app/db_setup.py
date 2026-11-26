@@ -27,6 +27,12 @@ def ensure_new_columns():
     _sqlite_add_column("attendance", "client_ip", "client_ip VARCHAR")
     _sqlite_add_column("attendance", "course_id", "course_id INTEGER")
     _sqlite_add_column("tasks", "category", "category VARCHAR")
+    _sqlite_add_column("courses", "start_date", "start_date DATE")
+    _sqlite_add_column("courses", "end_date", "end_date DATE")
+    _sqlite_add_column("modules", "week_number", "week_number INTEGER")
+    _sqlite_add_column("modules", "start_date", "start_date DATE")
+    _sqlite_add_column("modules", "content", "content TEXT")
+    _sqlite_add_column("modules", "links", "links TEXT")
 
 
 def seed_school_networks_from_env():

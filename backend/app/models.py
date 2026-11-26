@@ -20,6 +20,12 @@ class Course(Base):
     teacher_id = Column(Integer, ForeignKey("users.id"))
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
+    # "weeks" (numbered Week 01–11) or "topics" (named topic / deliverable blocks)
+    organization = Column(String, default="weeks")
+    # Display names only — not login accounts.
+    teachers_text = Column(Text, nullable=True)
+    # Class group, weekday, time, room (plain text).
+    class_info = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Enrollment(Base):
@@ -132,7 +138,7 @@ class FileExtraction(Base):
     """A date or item pulled from a week file. Hidden from students until confirmed."""
     __tablename__ = "file_extractions"
     id = Column(Integer, primary_key=True, index=True)
-    file_id = Column(Integer, ForeignKey("week_files.id"), nullable=False, index=True)
+    file_id = Column(Integer, ForeignKey("week_files.id"), nullable=True, index=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False, index=True)
     module_id = Column(Integer, ForeignKey("modules.id"), nullable=False, index=True)
     kind = Column(String, nullable=False, default="assignment")  # assignment / exam
@@ -142,6 +148,12 @@ class FileExtraction(Base):
     snippet = Column(Text, nullable=True)
     status = Column(String, default="pending", nullable=False, index=True)  # pending / confirmed / dismissed
     published_task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
+    # file / section_title / description / seed
+    source = Column(String, default="file")
+    # year / time, when the source text disagrees; official due_at is the preferred value
+    conflict_type = Column(String, nullable=True)
+    conflict_note = Column(Text, nullable=True)
+    alternate_value = Column(String, nullable=True)
     confirmed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     confirmed_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -408,6 +408,7 @@ def extract_items(filename: str, text: str, classified: Optional[str] = None) ->
             default_time = time(9, 0) if kind == "exam" else time(23, 59)
             add_item(kind, fallback, _combine(when, None, default_time), "", filename)
 
+    annotate_conflicts(text or "", items)
     return items
 
 
@@ -421,4 +422,155 @@ def analyse_file(path: str, filename: str) -> dict:
         "text_preview": (text or "")[:400],
         "items": extract_items(filename, text, classified),
         "readable": bool(text) and not text.startswith("[Could not read file:"),
+    }
+
+
+def _item_due(item: dict) -> Optional[datetime]:
+    raw = item.get("due_at")
+    if isinstance(raw, datetime):
+        return raw if raw.tzinfo else raw.replace(tzinfo=HK)
+    if not raw:
+        return None
+    try:
+        parsed = date_parser.isoparse(str(raw))
+    except (TypeError, ValueError):
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=HK)
+    return parsed
+
+
+def _preferred_time(clocks: List[time]) -> time:
+    unique = sorted({c.replace(second=0, microsecond=0) for c in clocks if c})
+    if not unique:
+        return time(23, 59)
+    non_eod = [c for c in unique if not (c.hour == 23 and c.minute >= 59)]
+    if len(non_eod) == 1:
+        return non_eod[0]
+    if non_eod:
+        return non_eod[0]
+    return unique[0]
+
+
+def _format_clock(value: time) -> str:
+    return f"{value.hour:02d}:{value.minute:02d}"
+
+
+def annotate_conflicts(text: str, items: List[dict]) -> List[dict]:
+    """Flag year or time disagreements in the source text and keep the preferred value.
+
+    Year: same month and day with two years — keep the later year (e.g. 2026 not 2025).
+    Time: same calendar date with two times — prefer a specific time over 23:59.
+    The official due_at on the item is the preferred value, never the discarded one.
+    """
+    years_by_md = {}
+    times_by_ymd = {}
+
+    def add_year(month, day, year):
+        years_by_md.setdefault((month, day), set()).add(year)
+
+    def add_time(year, month, day, clock):
+        if clock is None:
+            return
+        times_by_ymd.setdefault((year, month, day), set()).add(clock.replace(second=0, microsecond=0))
+
+    for match in _DATE_TOKEN.finditer(text or ""):
+        when = _parse_date(match.group(0))
+        if not when:
+            continue
+        add_year(when.month, when.day, when.year)
+        window = (text or "")[max(0, match.start() - 40): match.end() + 90]
+        clock = None
+        time_match = _TIME_TOKEN.search(window)
+        if time_match:
+            clock = _parse_time(time_match.group(0))
+        add_time(when.year, when.month, when.day, clock)
+
+    for item in items:
+        due = _item_due(item)
+        if not due:
+            continue
+        add_year(due.month, due.day, due.year)
+        add_time(due.year, due.month, due.day, due.timetz().replace(tzinfo=None) if False else due.time().replace(second=0, microsecond=0))
+
+    for item in items:
+        due = _item_due(item)
+        if not due:
+            continue
+        years = years_by_md.get((due.month, due.day), set())
+        preferred_year = max(years) if years else due.year
+        if len(years) > 1 and due.year != preferred_year:
+            dropped = due.year
+            due = due.replace(year=preferred_year)
+            item["due_at"] = due.isoformat()
+            item["conflict_type"] = "year"
+            item["alternate_value"] = f"{due.day} {due.strftime('%b')} {dropped}"
+            item["conflict_note"] = (
+                f"The source text also has {due.day} {due.strftime('%b')} {dropped}. "
+                f"The date stored here is {due.day} {due.strftime('%b')} {preferred_year}. "
+                "Please confirm the year before this is shown to students as a due item."
+            )
+        # Re-read after a possible year fix so times are grouped on the preferred date.
+        times = set(times_by_ymd.get((due.year, due.month, due.day), set()))
+        # Times recorded against the discarded year should still count.
+        for year in years:
+            times.update(times_by_ymd.get((year, due.month, due.day), set()))
+        if len(times) > 1:
+            preferred = _preferred_time(list(times))
+            others = sorted(t for t in times if t != preferred)
+            due = due.replace(hour=preferred.hour, minute=preferred.minute, second=0, microsecond=0)
+            item["due_at"] = due.isoformat()
+            # Year conflict takes naming priority if both appear; still mention the time.
+            if item.get("conflict_type") == "year":
+                item["conflict_note"] = (
+                    item.get("conflict_note") or ""
+                ) + f" The source also lists more than one time; { _format_clock(preferred) } was kept."
+            else:
+                item["conflict_type"] = "time"
+                item["alternate_value"] = ", ".join(_format_clock(t) for t in others)
+                item["conflict_note"] = (
+                    f"The source text also lists {item['alternate_value']} on the same date. "
+                    f"The time stored here is {_format_clock(preferred)}. "
+                    "Please confirm the time before this is shown to students as a due item."
+                )
+
+    # Collapse items that became the same official date after a conflict fix.
+    merged: List[dict] = []
+    seen = set()
+    for item in items:
+        due = _item_due(item)
+        key = (
+            (item.get("kind") or ""),
+            (item.get("title") or "").strip().lower(),
+            due.isoformat() if due else "",
+            (item.get("location") or "").strip().lower(),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(item)
+    items[:] = merged
+    return items
+
+
+def extract_from_section(title: str, content: str = "") -> dict:
+    """Pull dates from a section title and description text (no uploaded file)."""
+    combined = "\n".join(part.strip() for part in (title or "", content or "") if part and part.strip())
+    classified = classify("section.txt", combined)
+    items = extract_items(title or "section", combined, classified)
+    for item in items:
+        item["source"] = "section_title" if title and title.strip() in combined else "description"
+        if title and title.strip() and title.strip() in (item.get("snippet") or combined):
+            # Prefer section_title when the date is in the heading, else description.
+            if _DATE_TOKEN.search(title or ""):
+                item["source"] = "section_title"
+            elif _DATE_TOKEN.search(content or ""):
+                item["source"] = "description"
+            else:
+                item["source"] = "section_title"
+    return {
+        "classified_type": classified,
+        "classified_label": CLASS_LABELS.get(classified, classified),
+        "items": items,
+        "text_preview": combined[:400],
     }

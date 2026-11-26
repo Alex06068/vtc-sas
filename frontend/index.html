@@ -111,6 +111,19 @@
           <label for="create-desc">Description <span class="cell-muted">(optional)</span></label>
           <textarea id="create-desc" name="description" placeholder="One sentence describing the course"></textarea>
         </div>
+        <div class="field">
+          <label for="create-teachers">Teachers <span class="cell-muted">(names only, optional)</span></label>
+          <input id="create-teachers" name="teachers_text" type="text" placeholder="e.g. CHEUNG WAI KIT / Kitson Cheung">
+        </div>
+        <div class="field">
+          <label for="create-class">Class, time or room <span class="cell-muted">(optional)</span></label>
+          <input id="create-class" name="class_info" type="text" placeholder="e.g. IT114115-2B, Friday 12:30">
+        </div>
+        <fieldset class="field">
+          <legend>Organisation</legend>
+          <label class="choice"><input type="radio" name="organization" id="create-org-weeks" value="weeks" checked> Weeks (Week 01–11)</label>
+          <label class="choice"><input type="radio" name="organization" id="create-org-topics" value="topics"> Topics / deliverable blocks</label>
+        </fieldset>
         <div class="field-row">
           <div class="field">
             <label for="create-start">Term start <span class="cell-muted">(optional)</span></label>

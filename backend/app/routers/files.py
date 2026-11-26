@@ -27,6 +27,7 @@ from ..storage import (
 )
 from .auth import get_current_user, require_teacher
 from .courses import _get_course_or_404, _require_course_teacher, _require_visible_course
+from ..section_dates import upsert_section_extractions
 
 router = APIRouter()
 
@@ -80,6 +81,10 @@ def _extraction_out(item: FileExtraction, week_file: Optional[WeekFile] = None) 
         "filename": week_file.original_name if week_file else None,
         "classified_type": week_file.classified_type if week_file else None,
         "published_task_id": item.published_task_id,
+        "source": item.source or ("file" if item.file_id else "section_title"),
+        "conflict_type": item.conflict_type or "",
+        "conflict_note": item.conflict_note or "",
+        "alternate_value": item.alternate_value or "",
     }
 
 
@@ -93,8 +98,8 @@ def _get_module(db: Session, course_id: int, module_id: int) -> Module:
 def cleanup_module_uploads(db: Session, course_id: int, module_id: int) -> None:
     files = db.query(WeekFile).filter(WeekFile.course_id == course_id, WeekFile.module_id == module_id).all()
     file_ids = [row.id for row in files]
+    db.query(FileExtraction).filter(FileExtraction.module_id == module_id).delete(synchronize_session=False)
     if file_ids:
-        db.query(FileExtraction).filter(FileExtraction.file_id.in_(file_ids)).delete(synchronize_session=False)
         db.query(WeekFile).filter(WeekFile.id.in_(file_ids)).delete(synchronize_session=False)
     delete_module_files(course_id, module_id)
 
@@ -188,6 +193,10 @@ async def upload_week_files(
                 location=extracted.get("location") or "",
                 snippet=extracted.get("snippet") or "",
                 status="pending",
+                source="file",
+                conflict_type=extracted.get("conflict_type"),
+                conflict_note=extracted.get("conflict_note"),
+                alternate_value=extracted.get("alternate_value"),
             )
             db.add(item)
             db.flush()
@@ -224,18 +233,41 @@ def list_course_files(
 @router.get("/{course_id}/extractions")
 def list_extractions(
     course_id: int,
-    status: Optional[str] = "pending",
-    current_user: User = Depends(require_teacher),
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    course = _get_course_or_404(db, course_id)
-    _require_course_teacher(current_user, course)
+    course = _require_visible_course(db, current_user, course_id)
+    is_teacher = current_user.role == "teacher" and current_user.id == course.teacher_id
     query = db.query(FileExtraction).filter(FileExtraction.course_id == course_id)
-    if status:
+    if not is_teacher:
+        query = query.filter(FileExtraction.status == "confirmed")
+    elif status:
         query = query.filter(FileExtraction.status == status)
     items = query.order_by(FileExtraction.id.asc()).all()
     files = {row.id: row for row in db.query(WeekFile).filter(WeekFile.course_id == course_id).all()}
     return [_extraction_out(item, files.get(item.file_id)) for item in items]
+
+
+@router.post("/{course_id}/modules/{module_id}/extract-text")
+def extract_module_text(
+    course_id: int,
+    module_id: int,
+    current_user: User = Depends(require_teacher),
+    db: Session = Depends(get_db),
+):
+    """Re-run date extraction on a week or topic title and description."""
+    course = _get_course_or_404(db, course_id)
+    _require_course_teacher(current_user, course)
+    module = _get_module(db, course_id, module_id)
+    rows = upsert_section_extractions(db, course_id, module.id, module.title, module.content or "")
+    db.commit()
+    pending = [row for row in rows if row.status == "pending"]
+    return {
+        "module_id": module.id,
+        "extractions": [_extraction_out(row) for row in rows],
+        "pending": [_extraction_out(row) for row in pending],
+    }
 
 
 @router.post("/{course_id}/extractions/confirm")

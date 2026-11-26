@@ -223,6 +223,7 @@ a:hover { text-decoration: underline; }
 .course-next { margin: 0 0 12px; color: var(--ink-soft); font-size: 13px; }
 .course-next.is-soon { color: #9a5b12; }
 .course-next.is-overdue { color: var(--danger); }
+.course-teachers { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
 .course-card .progress-track { margin-top: auto; }
 .course-card-foot {
   display: flex; justify-content: space-between; align-items: center;
@@ -686,6 +687,14 @@ a:hover { text-decoration: underline; }
   padding: 12px 0 4px;
 }
 .confirm-row:first-child { border-top: 0; padding-top: 0; }
+.confirm-row.has-conflict { background: #fff6f5; margin: 0 -12px; padding-left: 12px; padding-right: 12px; border-radius: 8px; }
+.conflict-note { margin: 0 0 8px; color: var(--danger); font-size: 13px; }
+.section-dates { list-style: none; margin: 0 0 8px; padding: 0; }
+.section-dates li { margin: 0 0 4px; font-size: 13px; color: var(--ink-soft); }
+.file-date.has-conflict, .section-dates .has-conflict { color: var(--danger); }
+fieldset.field { border: 0; padding: 0; margin: 0 0 12px; }
+fieldset.field legend { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+label.choice { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 0 0 4px; }
 .confirm-file { margin: 0 0 8px; font-weight: 600; }
 .confirm-dismiss { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); margin: 0 0 8px; }
 #extract-banner .text-action { margin-left: 6px; }

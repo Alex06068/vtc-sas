@@ -29,6 +29,9 @@
   const createDesc = document.getElementById('create-desc');
   const createStart = document.getElementById('create-start');
   const createEnd = document.getElementById('create-end');
+  const createTeachers = document.getElementById('create-teachers');
+  const createClass = document.getElementById('create-class');
+  const createOrgTopics = document.getElementById('create-org-topics');
   const createError = document.getElementById('create-error');
   const createSubmit = document.getElementById('create-submit');
 
@@ -141,7 +144,7 @@
         nextHtml = UI.escapeHtml(next.title) + ' · ' + UI.escapeHtml(phrase.text);
         if (phrase.kind === 'soon' || phrase.kind === 'overdue') nextClass += ' is-' + phrase.kind;
       } else if (state.isTeacher) {
-        nextHtml = 'No upcoming work. Add a week on the course page when you are ready.';
+        nextHtml = 'No upcoming work. Add a week or topic on the course page when you are ready.';
       } else {
         nextHtml = 'No upcoming work';
       }
@@ -151,6 +154,7 @@
           '<div class="course-card-body">' +
             '<span class="course-code">' + UI.escapeHtml(course.code || 'No code') + '</span>' +
             '<h2 class="course-name">' + UI.escapeHtml(course.name) + '</h2>' +
+            (course.teachersText ? '<p class="course-teachers">' + UI.escapeHtml(course.teachersText) + '</p>' : '') +
             '<p class="' + nextClass + '">' + nextHtml + '</p>' +
             '<div class="progress-track is-thin" aria-label="Progress ' + pct + ' percent">' +
               '<div class="progress-fill" style="width:' + pct + '%"></div>' +
@@ -269,6 +273,9 @@
       if (description) payload.description = description;
       if (startDate) payload.start_date = startDate;
       if (endDate) payload.end_date = endDate;
+      if (createTeachers && createTeachers.value.trim()) payload.teachers_text = createTeachers.value.trim();
+      if (createClass && createClass.value.trim()) payload.class_info = createClass.value.trim();
+      payload.organization = (createOrgTopics && createOrgTopics.checked) ? 'topics' : 'weeks';
 
       setBusy(createSubmit, true, 'Creating…');
       window.Api.createCourse(payload)

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..storage import delete_module_files
 from ..models import Course, Enrollment, FileExtraction, Module, User, WeekFile
+from ..section_dates import upsert_section_extractions
 from .auth import get_current_user, require_teacher
 
 router = APIRouter()
@@ -20,6 +21,9 @@ class CourseCreate(BaseModel):
     description: Optional[str] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+    organization: Optional[str] = "weeks"
+    teachers_text: Optional[str] = None
+    class_info: Optional[str] = None
 
 
 class CourseUpdate(BaseModel):
@@ -28,6 +32,9 @@ class CourseUpdate(BaseModel):
     description: Optional[str] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+    organization: Optional[str] = None
+    teachers_text: Optional[str] = None
+    class_info: Optional[str] = None
 
 
 class ModuleLink(BaseModel):
@@ -62,6 +69,19 @@ def _dump(model: BaseModel) -> dict:
 def _validate_term(start: Optional[date], end: Optional[date]) -> None:
     if start and end and end < start:
         raise HTTPException(status_code=400, detail="End date must be on or after the start date")
+
+
+def _normalize_organization(value: Optional[str]) -> str:
+    raw = (value or "weeks").strip().lower()
+    if raw in {"week", "weeks", "weekly"}:
+        return "weeks"
+    if raw in {"topic", "topics", "deliverable", "deliverables"}:
+        return "topics"
+    raise HTTPException(status_code=400, detail="Organization must be weeks or topics")
+
+
+def _block_word(course: Course) -> str:
+    return "topic" if (getattr(course, "organization", None) or "weeks") == "topics" else "week"
 
 
 def _normalize_links(raw: Optional[List[Any]]) -> List[dict]:
@@ -105,6 +125,9 @@ def _course_out(course: Course) -> dict:
         "teacher_id": course.teacher_id,
         "start_date": course.start_date.isoformat() if course.start_date else None,
         "end_date": course.end_date.isoformat() if course.end_date else None,
+        "organization": course.organization or "weeks",
+        "teachers_text": course.teachers_text or "",
+        "class_info": course.class_info or "",
         "created_at": course.created_at.isoformat() if course.created_at else None,
     }
 
@@ -179,6 +202,9 @@ def create_course(course: CourseCreate, current_user: User = Depends(require_tea
         teacher_id=current_user.id,
         start_date=course.start_date,
         end_date=course.end_date,
+        organization=_normalize_organization(course.organization),
+        teachers_text=(course.teachers_text or "").strip() or None,
+        class_info=(course.class_info or "").strip() or None,
     )
     db.add(db_course)
     db.commit()
@@ -253,6 +279,12 @@ def update_course(course_id: int, payload: CourseUpdate, current_user: User = De
         course.start_date = data["start_date"]
     if "end_date" in data:
         course.end_date = data["end_date"]
+    if "organization" in data and data["organization"] is not None:
+        course.organization = _normalize_organization(data["organization"])
+    if "teachers_text" in data:
+        course.teachers_text = (data["teachers_text"] or "").strip() or None
+    if "class_info" in data:
+        course.class_info = (data["class_info"] or "").strip() or None
     _validate_term(course.start_date, course.end_date)
     db.commit()
     db.refresh(course)
@@ -270,7 +302,7 @@ def _apply_module_fields(module: Module, data: dict) -> None:
     if "title" in data and data["title"] is not None:
         title = str(data["title"]).strip()
         if not title:
-            raise HTTPException(status_code=400, detail="Week title is required")
+            raise HTTPException(status_code=400, detail="A title is required")
         module.title = title
     if "week_number" in data:
         module.week_number = data["week_number"]
@@ -299,7 +331,13 @@ def add_module(course_id: int, module: ModuleCreate, current_user: User = Depend
         order=order,
     )
     _apply_module_fields(db_mod, data)
+    # Topic-based courses should not pick up a week number by accident.
+    if (course.organization or "weeks") == "topics" and data.get("week_number") is None:
+        db_mod.week_number = None
     db.add(db_mod)
+    db.commit()
+    db.refresh(db_mod)
+    upsert_section_extractions(db, course_id, db_mod.id, db_mod.title, db_mod.content or "")
     db.commit()
     db.refresh(db_mod)
     return _module_out(db_mod)
@@ -328,8 +366,11 @@ def update_module(course_id: int, module_id: int, payload: ModuleUpdate, current
     _require_course_teacher(current_user, course)
     module = db.query(Module).filter(Module.id == module_id, Module.course_id == course_id).first()
     if not module:
-        raise HTTPException(status_code=404, detail="Week not found")
+        raise HTTPException(status_code=404, detail="Week or topic not found")
     _apply_module_fields(module, _dump(payload))
+    db.commit()
+    db.refresh(module)
+    upsert_section_extractions(db, course_id, module.id, module.title, module.content or "")
     db.commit()
     db.refresh(module)
     return _module_out(module)
@@ -341,13 +382,13 @@ def delete_module(course_id: int, module_id: int, current_user: User = Depends(r
     _require_course_teacher(current_user, course)
     module = db.query(Module).filter(Module.id == module_id, Module.course_id == course_id).first()
     if not module:
-        raise HTTPException(status_code=404, detail="Week not found")
+        raise HTTPException(status_code=404, detail="Week or topic not found")
     file_rows = db.query(WeekFile).filter(WeekFile.course_id == course_id, WeekFile.module_id == module_id).all()
     file_ids = [row.id for row in file_rows]
+    db.query(FileExtraction).filter(FileExtraction.module_id == module_id).delete(synchronize_session=False)
     if file_ids:
-        db.query(FileExtraction).filter(FileExtraction.file_id.in_(file_ids)).delete(synchronize_session=False)
         db.query(WeekFile).filter(WeekFile.id.in_(file_ids)).delete(synchronize_session=False)
     delete_module_files(course_id, module_id)
     db.delete(module)
     db.commit()
-    return {"message": "Week deleted"}
+    return {"message": "Deleted"}

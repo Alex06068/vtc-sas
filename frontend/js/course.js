@@ -42,7 +42,14 @@
   const editDesc = document.getElementById('edit-desc');
   const editStart = document.getElementById('edit-start');
   const editEnd = document.getElementById('edit-end');
+  const editTeachers = document.getElementById('edit-teachers');
+  const editClass = document.getElementById('edit-class');
+  const editOrgWeeks = document.getElementById('edit-org-weeks');
+  const editOrgTopics = document.getElementById('edit-org-topics');
   const editSubmit = document.getElementById('edit-course-submit');
+  const modulesHeading = document.getElementById('modules-heading');
+  const weekNumberField = document.getElementById('week-number-field');
+  const weekDialogLead = document.getElementById('week-dialog-lead');
 
   const weekDialog = document.getElementById('week-dialog');
   const weekForm = document.getElementById('week-form');
@@ -56,7 +63,7 @@
   const weekLinks = document.getElementById('week-links');
   const weekSubmit = document.getElementById('week-submit');
 
-  const state = { course: null, modules: [], tasks: [], files: [], user: null, canEdit: false, studentView: false };
+  const state = { course: null, modules: [], tasks: [], files: [], extractions: [], user: null, canEdit: false, studentView: false };
 
   let courseId = null;
   try {
@@ -131,6 +138,18 @@
     return '';
   }
 
+  function isTopics() {
+    return !!(state.course && state.course.organization === 'topics');
+  }
+
+  function blockWord() {
+    return isTopics() ? 'topic' : 'week';
+  }
+
+  function blockWordCap() {
+    return isTopics() ? 'Topic' : 'Week';
+  }
+
   function teacherUI() {
     return state.canEdit && !state.studentView;
   }
@@ -150,6 +169,10 @@
   }
 
   function pendingExtractions() {
+    const fromState = (state.extractions || []).filter(function (item) {
+      return item.status === 'pending';
+    });
+    if (fromState.length) return fromState;
     const items = [];
     (state.files || []).forEach(function (file) {
       (file.extractions || []).forEach(function (item) {
@@ -157,6 +180,24 @@
       });
     });
     return items;
+  }
+
+  function sectionDatesForModule(moduleId) {
+    return (state.extractions || []).filter(function (item) {
+      if (String(item.module_id) !== String(moduleId)) return false;
+      if (item.file_id) return false;
+      if (item.status === 'dismissed') return false;
+      return item.status === 'confirmed' || teacherUI();
+    });
+  }
+
+  function sourceLabel(item) {
+    if (!item) return 'Section';
+    if (item.filename) return item.filename;
+    if (item.source === 'description') return 'Section description';
+    if (item.source === 'section_title') return 'Section title';
+    if (item.source === 'seed') return 'Course list';
+    return 'Section text';
   }
 
   function localDateTimeValue(value) {
@@ -199,9 +240,15 @@
     titleEl.textContent = course.name;
     const bits = [];
     if (course.code) bits.push('<strong>' + UI.escapeHtml(course.code) + '</strong>');
-    metaEl.innerHTML = bits.join(' ') || '';
+    if (course.teachersText) bits.push(UI.escapeHtml(course.teachersText));
+    if (course.classInfo) bits.push(UI.escapeHtml(course.classInfo));
+    metaEl.innerHTML = bits.join(' · ') || '';
     crumbEl.textContent = course.code || course.name;
     descEl.textContent = course.description || 'No description has been added to this course yet.';
+    if (modulesHeading) {
+      modulesHeading.textContent = isTopics() ? 'Topics' : 'Weeks';
+    }
+    if (addWeekBtn) addWeekBtn.textContent = isTopics() ? 'Add a topic' : 'Add a week';
     if (termEl) {
       if (course.startDate || course.endDate) {
         const start = course.startDate ? N.formatDate(course.startDate) : '—';
@@ -243,10 +290,12 @@
     if (!modules.length) {
       modulesEl.innerHTML = '';
       const message = teacherUI()
-        ? 'This course has no weeks yet. Add week 1 to get started.'
-        : 'This course has no weeks yet.';
+        ? (isTopics()
+          ? 'This course has no topics yet. Add a topic to get started.'
+          : 'This course has no weeks yet. Add week 1 to get started.')
+        : (isTopics() ? 'This course has no topics yet.' : 'This course has no weeks yet.');
       const actions = teacherUI()
-        ? [{ label: 'Add week 1', onClick: function () { openWeekDialog(null); } }]
+        ? [{ label: isTopics() ? 'Add a topic' : 'Add week 1', onClick: function () { openWeekDialog(null); } }]
         : null;
       UI.setState(weeksEmpty, 'empty', message, null, actions);
       return;
@@ -277,6 +326,18 @@
             '<button type="button" class="text-action danger" data-delete-week="' + UI.escapeHtml(String(module.id)) + '">Delete</button>' +
           '</div>'
         : '';
+      const sectionDates = sectionDatesForModule(module.id);
+      if (sectionDates.length) {
+        body.push('<ul class="section-dates">' + sectionDates.map(function (item) {
+          const pending = item.status === 'pending';
+          const text = (item.title ? item.title + ' — ' : '') + (itemDateText(item) || 'Date to confirm');
+          const flag = item.conflict_type && teacherUI()
+            ? ' · ' + (item.conflict_type === 'year' ? 'year conflict' : 'time conflict') + ', awaiting confirmation'
+            : (teacherUI() ? (pending ? ' · unconfirmed, from section text' : ' · confirmed, from section text') : '');
+          return '<li class="file-date' + (pending ? ' is-pending' : '') + (item.conflict_type ? ' has-conflict' : '') + '">' +
+            UI.escapeHtml(text + flag) + '</li>';
+        }).join('') + '</ul>');
+      }
       const files = filesForModule(module.id);
       if (files.length) {
         body.push('<ul class="week-files">' + files.map(function (file) {
@@ -311,7 +372,7 @@
         body.push(
           '<div class="dropzone" data-week-drop="' + UI.escapeHtml(String(module.id)) + '">' +
             '<p>Drop Word, Excel, PowerPoint or PDF files here, or <label class="text-action">browse<input type="file" multiple accept=".docx,.xlsx,.pptx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation" data-week-file="' + UI.escapeHtml(String(module.id)) + '" hidden></label>.</p>' +
-            '<p class="cell-muted">A whole batch can go into this week. Extracted dates need your confirmation before students see them as due items.</p>' +
+            '<p class="cell-muted">A whole batch can go into this ' + blockWord() + '. Extracted dates need your confirmation before students see them as due items.</p>' +
           '</div>'
         );
       }
@@ -386,7 +447,8 @@
       window.Api.getCourse(courseId),
       window.Api.getModules(courseId).catch(function () { return []; }),
       window.Api.getTasks().catch(function () { return []; }),
-      window.Api.getCourseFiles(courseId).catch(function () { return []; })
+      window.Api.getCourseFiles(courseId).catch(function () { return []; }),
+      window.Api.getExtractions(courseId).catch(function () { return []; })
     ])
       .then(function (results) {
         state.course = N.normalizeCourse(results[0]);
@@ -395,6 +457,7 @@
         state.modules = N.asList(results[1]).map(N.normalizeModule);
         const allTasks = N.asList(results[2]).map(N.normalizeTask);
         state.files = N.asList(results[3]);
+        state.extractions = N.asList(results[4]);
         state.tasks = allTasks.filter(function (task) {
           return task.courseId != null && String(task.courseId) === String(state.course.id);
         });
@@ -424,6 +487,12 @@
       editDesc.value = course.description || '';
       editStart.value = isoDate(course.startDate);
       editEnd.value = isoDate(course.endDate);
+      if (editTeachers) editTeachers.value = course.teachersText || '';
+      if (editClass) editClass.value = course.classInfo || '';
+      if (editOrgTopics && editOrgWeeks) {
+        if (course.organization === 'topics') editOrgTopics.checked = true;
+        else editOrgWeeks.checked = true;
+      }
       UI.openDialog(editDialog);
       window.setTimeout(function () { editCode.focus(); }, 30);
     });
@@ -445,7 +514,10 @@
         name: name,
         description: editDesc.value.trim(),
         start_date: editStart.value || null,
-        end_date: editEnd.value || null
+        end_date: editEnd.value || null,
+        teachers_text: editTeachers ? editTeachers.value.trim() : '',
+        class_info: editClass ? editClass.value.trim() : '',
+        organization: (editOrgTopics && editOrgTopics.checked) ? 'topics' : 'weeks'
       })
         .then(function (raw) {
           state.course = N.normalizeCourse(raw);
@@ -468,8 +540,15 @@
     hideFormError(weekError);
     weekForm.reset();
     weekId.value = module && module.id != null ? String(module.id) : '';
-    weekTitle.textContent = module ? 'Edit week' : 'Add a week';
-    weekSubmit.textContent = module ? 'Save week' : 'Add week';
+    const noun = blockWord();
+    weekTitle.textContent = module ? ('Edit ' + noun) : ('Add a ' + noun);
+    weekSubmit.textContent = module ? ('Save ' + noun) : ('Add ' + noun);
+    if (weekNumberField) weekNumberField.hidden = isTopics();
+    if (weekDialogLead) {
+      weekDialogLead.textContent = isTopics()
+        ? 'Add a named topic or deliverable block, optional date, and materials as text or links. Dates found in the title or description are offered for confirmation. After it is saved, you can drop Word, Excel, PowerPoint or PDF files into it.'
+        : 'Add a title, an optional week number or date, and materials as text or links. Dates found in the title or description are offered for confirmation. After it is saved, you can drop Word, Excel, PowerPoint or PDF files into it.';
+    }
     if (module) {
       weekName.value = module.title || '';
       weekNumber.value = module.weekNumber != null ? String(module.weekNumber) : '';
@@ -498,16 +577,16 @@
       if (deleteBtn) {
         const id = deleteBtn.getAttribute('data-delete-week');
         const module = state.modules.find(function (item) { return String(item.id) === String(id); });
-        const label = module ? module.title : 'this week';
+        const label = module ? module.title : ('this ' + blockWord());
         if (!window.confirm('Delete "' + label + '"? This cannot be undone.')) return;
         window.Api.deleteModule(courseId, id)
           .then(function () {
-            UI.toast('Week deleted');
+            UI.toast(blockWordCap() + ' deleted');
             return load();
           })
           .catch(function (err) {
             if (err && err.status === 401) return;
-            UI.toast((err && err.message) || 'Could not delete that week.', 'error');
+            UI.toast((err && err.message) || ('Could not delete that ' + blockWord() + '.'), 'error');
           });
       }
     });
@@ -519,13 +598,13 @@
       hideFormError(weekError);
       const title = weekName.value.trim();
       if (!title) {
-        showFormError(weekError, 'Please enter a title for this week.');
+        showFormError(weekError, 'Please enter a title for this ' + blockWord() + '.');
         weekName.focus();
         return;
       }
       const payload = {
         title: title,
-        week_number: weekNumber.value ? Number(weekNumber.value) : null,
+        week_number: (!isTopics() && weekNumber.value) ? Number(weekNumber.value) : null,
         start_date: weekDate.value || null,
         content: weekContent.value.trim(),
         links: parseLinkLines(weekLinks.value)
@@ -537,13 +616,13 @@
         : window.Api.addModule(courseId, payload);
       request
         .then(function () {
-          UI.toast(existingId ? 'Week updated' : 'Week added');
+          UI.toast(existingId ? (blockWordCap() + ' updated') : (blockWordCap() + ' added'));
           UI.closeDialog(weekDialog);
           return load();
         })
         .catch(function (err) {
           if (err && err.status === 401) return;
-          showFormError(weekError, (err && err.message) || 'Could not save this week.');
+          showFormError(weekError, (err && err.message) || ('Could not save this ' + blockWord() + '.'));
         })
         .finally(function () {
           setBusy(weekSubmit, false);
@@ -582,9 +661,15 @@
     }
     confirmList.innerHTML = items.map(function (item) {
       const id = UI.escapeHtml(String(item.id));
+      const conflict = item.conflict_note
+        ? '<p class="conflict-note">' + UI.escapeHtml(item.conflict_note) + '</p>'
+        : '';
       return (
-        '<div class="confirm-row" data-extract-id="' + id + '">' +
-          '<p class="confirm-file">' + UI.escapeHtml(item.filename || 'File') + '</p>' +
+        '<div class="confirm-row' + (item.conflict_type ? ' has-conflict' : '') + '" data-extract-id="' + id + '">' +
+          '<p class="confirm-file">' + UI.escapeHtml(sourceLabel(item)) +
+            (item.conflict_type ? ' · ' + (item.conflict_type === 'year' ? 'Year conflict' : 'Time conflict') : '') +
+          '</p>' +
+          conflict +
           '<div class="field-row">' +
             '<div class="field">' +
               '<label>Type</label>' +

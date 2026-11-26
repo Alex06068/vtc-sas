@@ -9,7 +9,8 @@ Demo accounts (passwords are obvious and for local demo only):
     student1 / student1
 
 The script is safe to run more than once: it creates missing rows and leaves
-existing demo data in place.
+existing demo data in place. It also adds the eight AY 2026/27 real
+courses (idempotent) under the same demo logins.
 """
 from __future__ import annotations
 
@@ -85,11 +86,20 @@ def get_or_create_user(db, username: str, email: str, password: str, role: str) 
     return user
 
 
-def get_or_create_course(db, code: str, name: str, description: str, teacher: User) -> Course:
+def get_or_create_course(db, code: str, name: str, description: str, teacher: User, organization: str = "weeks") -> Course:
     course = db.query(Course).filter(Course.code == code).first()
     if course:
+        if not getattr(course, "organization", None):
+            course.organization = organization
+            db.commit()
         return course
-    course = Course(code=code, name=name, description=description, teacher_id=teacher.id)
+    course = Course(
+        code=code,
+        name=name,
+        description=description,
+        teacher_id=teacher.id,
+        organization=organization,
+    )
     db.add(course)
     db.commit()
     db.refresh(course)
@@ -109,13 +119,12 @@ def ensure_enrollment(db, user: User, course: Course) -> None:
 
 def ensure_module(db, course: Course, title: str, order: int, week_number=None) -> None:
     existing = db.query(Module).filter(Module.course_id == course.id, Module.title == title).first()
-    number = week_number if week_number is not None else order
     if existing:
-        if existing.week_number is None and number is not None:
-            existing.week_number = number
+        if week_number is not None and existing.week_number is None:
+            existing.week_number = week_number
             db.commit()
         return
-    db.add(Module(course_id=course.id, title=title, order=order, week_number=number))
+    db.add(Module(course_id=course.id, title=title, order=order, week_number=week_number))
     db.commit()
 
 
@@ -238,10 +247,10 @@ def seed() -> None:
             ensure_enrollment(db, teacher, course)
             ensure_enrollment(db, student, course)
 
-        ensure_module(db, cloud, "Week 1 — Cloud concepts", 1)
-        ensure_module(db, cloud, "Week 2 — Virtual machines", 2)
-        ensure_module(db, web, "Week 1 — HTTP and REST", 1)
-        ensure_module(db, web, "Week 2 — Frontend and APIs", 2)
+        ensure_module(db, cloud, "Week 1 — Cloud concepts", 1, week_number=1)
+        ensure_module(db, cloud, "Week 2 — Virtual machines", 2, week_number=2)
+        ensure_module(db, web, "Week 1 — HTTP and REST", 1, week_number=1)
+        ensure_module(db, web, "Week 2 — Frontend and APIs", 2, week_number=2)
 
         today = datetime.now(timezone.utc).replace(hour=12, minute=0, second=0, microsecond=0)
         ensure_task(db, teacher, cloud, "Lab report 1", today + timedelta(days=7), "20%", "assignment")
@@ -262,6 +271,9 @@ def seed() -> None:
             print(f"  added {added} Hong Kong public holidays for 2026")
         ensure_school_network(db)
         ensure_chat_history(db, student)
+
+        from seed_ay2627 import seed_ay2627
+        seed_ay2627(db, teacher, student, ensure_enrollment)
 
         tables = inspect(engine).get_table_names()
         print("Tables now in the database:", ", ".join(sorted(tables)))

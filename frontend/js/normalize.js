@@ -36,7 +36,10 @@
       description: String(pick(raw, ['description', 'summary']) || ''),
       teacherId: pick(raw, ['teacher_id']),
       startDate: pick(raw, ['start_date', 'startDate']) || null,
-      endDate: pick(raw, ['end_date', 'endDate']) || null
+      endDate: pick(raw, ['end_date', 'endDate']) || null,
+      organization: String(pick(raw, ['organization']) || 'weeks'),
+      teachersText: String(pick(raw, ['teachers_text', 'teachersText']) || ''),
+      classInfo: String(pick(raw, ['class_info', 'classInfo']) || '')
     };
   }
 

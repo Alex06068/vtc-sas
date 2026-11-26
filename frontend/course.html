@@ -73,7 +73,7 @@
           <p class="muted" id="course-term" hidden></p>
           <p class="callout" id="extract-banner" hidden></p>
 
-          <h2 class="week-heading">Weeks</h2>
+          <h2 class="week-heading" id="modules-heading">Weeks</h2>
           <div id="modules-list" class="week-list"><p class="muted">Loading weeks&hellip;</p></div>
           <div id="weeks-empty" class="state-box" role="status"></div>
 
@@ -112,6 +112,19 @@
           <label for="edit-desc">Description <span class="cell-muted">(optional)</span></label>
           <textarea id="edit-desc" name="description"></textarea>
         </div>
+        <div class="field">
+          <label for="edit-teachers">Teachers <span class="cell-muted">(names only, optional)</span></label>
+          <input id="edit-teachers" name="teachers_text" type="text" placeholder="e.g. CHEUNG WAI KIT / Kitson Cheung">
+        </div>
+        <div class="field">
+          <label for="edit-class">Class, time or room <span class="cell-muted">(optional)</span></label>
+          <input id="edit-class" name="class_info" type="text" placeholder="e.g. IT114115-2B, Friday 12:30">
+        </div>
+        <fieldset class="field">
+          <legend>Organisation</legend>
+          <label class="choice"><input type="radio" name="organization" id="edit-org-weeks" value="weeks"> Weeks (Week 01–11)</label>
+          <label class="choice"><input type="radio" name="organization" id="edit-org-topics" value="topics"> Topics / deliverable blocks</label>
+        </fieldset>
         <div class="field-row">
           <div class="field">
             <label for="edit-start">Term start <span class="cell-muted">(optional)</span></label>
@@ -134,7 +147,7 @@
     <form id="week-form" novalidate>
       <div class="modal-head">
         <h2 id="week-dialog-title">Add a week</h2>
-        <p>Add a title, an optional week number or date, and materials as text or links. After the week is saved, you can drop Word, Excel, PowerPoint or PDF files into it.</p>
+        <p id="week-dialog-lead">Add a title, an optional week number or date, and materials as text or links. After it is saved, you can drop Word, Excel, PowerPoint or PDF files into it. Dates found in the title or description are offered for confirmation.</p>
       </div>
       <div class="modal-body">
         <div class="form-error" id="week-error" role="alert"></div>
@@ -144,7 +157,7 @@
           <input id="week-title" name="title" type="text" placeholder="e.g. Cloud concepts" required>
         </div>
         <div class="field-row">
-          <div class="field">
+          <div class="field" id="week-number-field">
             <label for="week-number">Week number <span class="cell-muted">(optional)</span></label>
             <input id="week-number" name="week_number" type="number" min="1" step="1" placeholder="e.g. 1">
           </div>

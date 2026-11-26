@@ -2,7 +2,8 @@
 
 This working tree simplifies the Moodle-style front end, lets teachers
 create and edit real courses by week, and lets them upload Office/PDF files
-into a week so assignment and exam dates can be extracted and confirmed.
+into a week or topic so assignment and exam dates can be extracted and confirmed,
+and seeds the eight real AY 2026/27 courses with known dates and conflict flags.
 
 It sits on top of the earlier demo-database / calendar / chatbot / school-IP
 attendance work, which is already on `main`. This branch has a **local commit
@@ -23,19 +24,25 @@ are ready.
 - The course page keeps breadcrumbs and only the Course tab. Unfinished tabs
   (Participants, Grades, Activities, Competencies, More) are hidden, and the
   sidebar icon grid / second navigation is gone. Teachers and students share
-  the same layout; teachers get text actions: Edit course and Add a week.
-- Teachers can create a course (code, name, description, optional term dates)
-  and are taken straight to the course page. They can edit those fields later,
-  and add or edit weeks (title, week number or date, materials as text and
-  links). The existing `modules` table is reused; new columns are added on
-  startup.
+  the same layout; teachers get text actions: Edit course and Add a week or topic.
+- Teachers can create a course (code, name, description, teacher names as
+  text, optional class/time, optional term dates, and whether the course is
+  organised by week or by topic) and are taken straight to the course page.
+  They can edit those fields later, and add or edit weeks or named topic /
+  deliverable blocks (title, optional week number or date, materials as text
+  and links). The existing `modules` table is reused; new columns are added
+  on startup. Topic-based courses are not forced into Week 01–11.
 - Teachers can drop or browse a batch of Word (.docx), Excel (.xlsx),
-  PowerPoint (.pptx) or PDF files into a week. The server reads the files,
+  PowerPoint (.pptx) or PDF files into a week or topic. The server reads the files,
   classifies them (notes / assignment brief / exam schedule), and extracts
   assignment names, due dates, and exam times or places where it can.
-  Teachers get a short confirm list they can edit. Unconfirmed dates are
-  not shown to students as due items. After confirmation, the items appear
-  in "Due this week" and on the calendar. On the week card, everyone sees
+  Extraction also covers section titles and description text, not only
+  uploaded Office/PDF files. Teachers get a short confirm list they can
+  edit. Year or time conflicts in the source (for example a Moodle year typo,
+  or 08:30 vs 11:59pm) are flagged; the preferred official date is stored,
+  and the item stays unconfirmed until the teacher accepts it. Unconfirmed
+  dates are not shown to students as due items. After confirmation, the
+  items appear in "Due this week" and on the calendar. On the week card, everyone sees
   the file type and any dates they are allowed to see before opening the
   file. Teachers also have a compact Student view (what students will see;
   unconfirmed dates are hidden). Uploaded files are stored under
@@ -49,9 +56,58 @@ are ready.
   file, and copying a previous-term course with shifted dates are **not**
   in this pass.
 
-Demo seed data (`teacher1` / `student1` and their two demo courses) is
-unchanged except that existing week titles now also store a week number.
-No fake real-world course catalogue was added.
+Demo seed data still includes `teacher1` / `student1` and the two demo
+courses IT114115 / IT114116 (for accounts and development). The eight real
+AY 2026/27 courses listed below are also seeded. No extra catalogue padding
+and no extra teacher login accounts (names are stored as text on the course).
+No lecture files, classmate rosters, or invented due dates were added.
+
+## AY 2026/27 real courses
+
+Re-run `python seed.py` from `backend/` (idempotent). The eight courses are:
+
+1. **ITP4120** Data Centre and Private Cloud Technologies — topics. Teacher
+   text: LI KA KIT / Harry Li. Quiz 26 Nov 2026 (confirmed). EA Project
+   Submission is stored as **14 Dec 2026**, with a year-conflict flag
+   (Moodle had 14 Dec 2025). Lab batch deadlines are mentioned but no
+   individual batch dates were invented.
+2. **ITE4116M** Final Year Project — deliverable topics (Initial / Interim /
+   Final Report), each grouping Guide, Template and the dated assignment
+   without inventing those files. Responsible teacher CHEUNG WAI KIT, plus
+   the other named teachers as text. Initial Report 10 Dec 2026 08:30 and
+   Final Report 29 Apr 2027 08:30 are confirmed. Interim Report is stored
+   as **12 Jan 2027 08:30**, with a time-conflict flag (schedule HTML also
+   said 11:59pm).
+3. **ITP4124** DevOps in Cloud — topics. Teachers: CHEUNG WAI KIT / Kitson
+   Cheung, WONG CHUN YIN / Cyrus Wong. CA written exam 4 Dec 2026 14:30
+   room A536, lab CA marks 7 Dec 2026 09:00, project 31 Oct 2026 (date
+   only; the Google Doc is not stored). Empty ACD Slides, empty New
+   sections, and the expired 2024 eSFQ item were not added.
+4. **ITP4125** Advanced Linux and Container Technologies — weeks 01–11,
+   with 07 and 08 merged. Teachers: CHEUNG WAI KIT, LEUNG KA KA / Elka
+   Leung. Week materials are labels only (no fake PDFs). EA Due Date
+   27 Nov 2026 23:59 and Kubernetes CA 4 Dec 2026 23:59 are confirmed
+   from the section titles.
+5. **LAN4103** Professional Workplace Communication: Proposal and Report
+   Writing — topics. Teacher: JALALI ALLEN. Class IT114115-2B, Friday
+   12:30. EAII exam 27 Nov 2026 12:30, room LW6M73. File pack left for
+   the teacher to upload.
+6. **LD0001-YUE** 「悅」語同行 — shared language self-study / reward
+   course. The official code is LD0001; the suffix keeps it distinct in
+   the database. Facilitators are not listed on the course card.
+7. **LD0001-KOL** Keep On Learning! / 自在學 — same kind of course, with
+   a distinct code for the same reason.
+8. **SDD4007** Enhancing Competencies in the 21st Century Workplace —
+   topics. Teacher: SUEN CHING / Ray Suen. Class 3.4 IT114115 2B,
+   Wednesday 15:30, room LW217. CA3 (4%) 31 Dec 2026 23:59 is confirmed.
+   The mock interview has no due date (none was invented). Workshop PPTX
+   files are not stored.
+
+`teacher1` is the demo editor for these courses; `student1` is enrolled
+so both views work. Confirmed dates (including 27 Nov and 4 Dec items)
+show under "Due this week" and on the calendar after seed. The two
+conflict items stay in the teacher's confirm list until accepted; they
+are not published as student due items until then.
 
 ## Run the server
 
@@ -83,9 +139,9 @@ Then open:
 `/` and `/index.html` are the course home. `/css` and `/js` are served from
 `frontend/`.
 
-## Try week file uploads
+## Try week or topic file uploads
 
-Sign in as `teacher1`, open a course, and add a week if needed. On the week
+Sign in as `teacher1`, open a course, and add a week or topic if needed. On the week or topic
 card, drop (or browse) one or more `.docx`, `.xlsx`, `.pptx` or `.pdf` files.
 If the files mention a due date or exam, a confirm list opens. Edit the name,
 date or place if needed, then confirm. Those items then show up for
@@ -110,9 +166,11 @@ should see data in:
 - `calendar_events`, `chat_messages`, `holidays`, `school_networks`
 
 New optional columns and tables on existing databases are added at startup:
-`courses.start_date`, `courses.end_date`, `tasks.location`, and on `modules`:
-`week_number`, `start_date`, `content`, `links`, plus the `week_files` and
-`file_extractions` tables.
+`courses.start_date`, `courses.end_date`, `courses.organization`,
+`courses.teachers_text`, `courses.class_info`, `tasks.location`, and on
+`modules`: `week_number`, `start_date`, `content`, `links`, plus the
+`week_files` and `file_extractions` tables (section-title dates may have
+no file; conflict fields live on the extraction row).
 
 ## Demo accounts
 
